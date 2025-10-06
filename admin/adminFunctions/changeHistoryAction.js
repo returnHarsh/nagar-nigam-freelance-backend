@@ -1,4 +1,4 @@
-import { ChangeHistory } from "../../models/ChangeHistory.js";
+import { ChangeHistory } from "../../models/changeHistory.js";
 import { errorLogger } from "../../utils/errorLogger.js"
 import bcrypt from "bcrypt";
 

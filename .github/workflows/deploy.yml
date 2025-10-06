@@ -1,0 +1,42 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
+          # Navigate to your app directory
+          cd ~/your-repo-name &&
+          
+          # Pull latest changes
+          git pull origin main &&
+          
+          # Install dependencies (uncomment based on your tech stack)
+          # npm install                    # For Node.js
+          # pip install -r requirements.txt # For Python
+          # mvn clean install               # For Java/Maven
+          
+          # Restart your application (choose one)
+          # pm2 restart all                           # If using PM2
+          # sudo systemctl restart your-service       # If using systemd
+          # docker-compose down && docker-compose up -d # If using Docker
+          # pkill -f "python app.py" && nohup python app.py > app.log 2>&1 & # Python without PM2
+          
+          echo "Deployment completed successfully!"
+        '

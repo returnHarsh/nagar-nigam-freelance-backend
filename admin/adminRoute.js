@@ -29,6 +29,7 @@ import { NagarNigamProperty } from "../models/nagarNigamProperty.js"
 import { Tax } from "../models/tax.js";
 import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import {ARVModification} from "../models/arvModification.js"
+import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 
 
 // lets create the uploads folder is it doens'nt exist
@@ -265,6 +266,10 @@ const adminJs = new AdminJS({
           fatherName: { isDisabled: true },
           ownerName: { isDisabled: true },
 
+          tax : {
+            isVisible : {show : true , edit : false},
+          },
+
           latestBillUrl: {
             type: 'string',
             isVisible: { list: false, show: true, edit: false }
@@ -272,7 +277,7 @@ const adminJs = new AdminJS({
           lastBillGeneratedAt: {
             type: 'datetime',
             isVisible: { list: false, show: true, edit: false }
-          }
+          },
         }
       },
       features: [
@@ -384,109 +389,111 @@ const adminJs = new AdminJS({
             icon: 'Upload',
             component: AdminCustomComponents.NagarNigamPropertyUpload,
 
-            handler: async (request, response, context) => {
-              console.log("inside the handler function");
+            // handler: async (request, response, context) => {
+            //   console.log("inside the handler function");
 
-              try {
-                const { file, filename } = request.payload;
+            //   try {
+            //     const { file, filename } = request.payload;
 
-                if (!file) {
-                  return {
-                    record: {},
-                    notice: {
-                      message: "No file uploaded",
-                      type: "error"
-                    }
-                  };
-                }
+            //     if (!file) {
+            //       return {
+            //         record: {},
+            //         notice: {
+            //           message: "No file uploaded",
+            //           type: "error"
+            //         }
+            //       };
+            //     }
 
-                // Decode base64 file
-                const base64Data = file.split(',')[1];
-                const buffer = Buffer.from(base64Data, 'base64');
+            //     // Decode base64 file
+            //     const base64Data = file.split(',')[1];
+            //     const buffer = Buffer.from(base64Data, 'base64');
 
-                // Parse Excel file
-                const workbook = XLSX.read(buffer, { type: 'buffer' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+            //     // Parse Excel file
+            //     const workbook = XLSX.read(buffer, { type: 'buffer' });
+            //     const sheetName = workbook.SheetNames[0];
+            //     const worksheet = workbook.Sheets[sheetName];
 
-                // Convert to JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            //     // Convert to JSON
+            //     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                console.log("Parsed rows:", jsonData.length);
-                console.log("First row columns:", jsonData[0] ? Object.keys(jsonData[0]) : []);
+            //     console.log("Parsed rows:", jsonData.length);
+            //     console.log("First row columns:", jsonData[0] ? Object.keys(jsonData[0]) : []);
 
-                if (jsonData.length === 0) {
-                  return {
-                    record: {},
-                    notice: {
-                      message: "Excel file is empty",
-                      type: "error"
-                    }
-                  };
-                }
+            //     if (jsonData.length === 0) {
+            //       return {
+            //         record: {},
+            //         notice: {
+            //           message: "Excel file is empty",
+            //           type: "error"
+            //         }
+            //       };
+            //     }
 
-                // Map Excel columns to your schema
-                const records = jsonData.map(row => ({
-                  houseNumber: String(row['House Number'] || row['houseNumber'] || row['house_number'] || '').trim(),
-                  ownerName: String(row['Owner Name'] || row['ownerName'] || row['Name'] || row['name'] || '').trim(),
-                  fatherName: String(row["Father's Name"] || row['fatherName'] || row['father_name'] || '').trim(),
-                  prevTax: (parseFloat(row['totalHouseTax'] ?? row['total house tax'] ?? 0) || 0) + (parseFloat(row['totalWaterTax'] ?? row["total water tax"] ?? 0) || 0),
-                  prevHouseTax: (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0),
-                  prevWaterTax: (parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0)
-                }));
+            //     // Map Excel columns to your schema
+            //     const records = jsonData.map(row => ({
+            //       houseNumber: String(row['House Number'] || row['houseNumber'] || row['house_number'] || '').trim(),
+            //       ownerName: String(row['Owner Name'] || row['ownerName'] || row['Name'] || row['name'] || '').trim(),
+            //       fatherName: String(row["Father's Name"] || row['fatherName'] || row['father_name'] || '').trim(),
+            //       prevHouseTax: (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0),
+            //       prevWaterTax: (parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0),
+            //       prevTax: (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0) + (parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0),
+            //     }));
 
-                console.log("Mapped records:", records.length);
+            //     console.log("Mapped records:", records.length);
 
-                // Filter out empty records
-                const validRecords = records.filter(record =>
-                  record.houseNumber !== '' && record.ownerName !== '' && record.fatherName !== ''
-                );
+            //     // Filter out empty records
+            //     const validRecords = records.filter(record =>
+            //       record.houseNumber !== '' && record.ownerName !== '' && record.fatherName !== ''
+            //     );
 
-                console.log("Valid records:", validRecords.length);
+            //     console.log("Valid records:", validRecords.length);
 
-                if (validRecords.length === 0) {
-                  return {
-                    record: {},
-                    notice: {
-                      message: "No valid records found in Excel file. Please check column names.",
-                      type: "error"
-                    }
-                  };
-                }
+            //     if (validRecords.length === 0) {
+            //       return {
+            //         record: {},
+            //         notice: {
+            //           message: "No valid records found in Excel file. Please check column names.",
+            //           type: "error"
+            //         }
+            //       };
+            //     }
 
-                // Use the imported model directly instead of context.resource.Model
-                const bulkOps = validRecords.map(record => ({
-                  updateOne: {
-                    filter: { ownerName: record.ownerName, houseNumber: record.houseNumber, fatherName: record.fatherName },
-                    update: { $set: record },
-                    upsert: true
-                  }
-                }));
+            //     // Use the imported model directly instead of context.resource.Model
+            //     const bulkOps = validRecords.map(record => ({
+            //       updateOne: {
+            //         filter: { ownerName: record.ownerName, houseNumber: record.houseNumber, fatherName: record.fatherName },
+            //         update: { $set: record },
+            //         upsert: true
+            //       }
+            //     }));
 
-                // ✅ USE THE IMPORTED MODEL DIRECTLY
-                const result = await NagarNigamProperty.bulkWrite(bulkOps);
+            //     // ✅ USE THE IMPORTED MODEL DIRECTLY
+            //     const result = await NagarNigamProperty.bulkWrite(bulkOps);
 
-                // console.log("Bulk write result:", result);
+            //     // console.log("Bulk write result:", result);
 
-                return {
-                  record: {},
-                  notice: {
-                    message: `Successfully uploaded ${validRecords.length} records. (${result.upsertedCount} new, ${result.modifiedCount} updated)`,
-                    type: "success"
-                  }
-                };
+            //     return {
+            //       record: {},
+            //       notice: {
+            //         message: `Successfully uploaded ${validRecords.length} records. (${result.upsertedCount} new, ${result.modifiedCount} updated)`,
+            //         type: "success"
+            //       }
+            //     };
 
-              } catch (error) {
-                console.error("Upload error:", error);
-                return {
-                  record: {},
-                  notice: {
-                    message: `Upload failed: ${error.message}`,
-                    type: "error"
-                  }
-                };
-              }
-            }
+            //   } catch (error) {
+            //     console.error("Upload error:", error);
+            //     return {
+            //       record: {},
+            //       notice: {
+            //         message: `Upload failed: ${error.message}`,
+            //         type: "error"
+            //       }
+            //     };
+            //   }
+            // }
+            handler : bulkUploadNagarNigamData
+
           }
         }
       }
@@ -720,7 +727,7 @@ const adminJs = new AdminJS({
 
                 return {
                   record : {},
-                  data : {currentARV : latestTax.arv , currentTotalTax : latestTax.totalTax , bakaya , error : null}
+                  data : {currentARV : latestTax.arv , currentTotalTax : latestTax.totalTax , bakaya , dueAmount : latestTax?.dueAmount , paidAmount : latestTax?.paidAmount , error : null}
                 }
 
 

@@ -357,6 +357,7 @@ export const after_newPaymentHook = async (response, request, context) => {
 
 		const paymentDoc = response.record.params
 		const currentUser = context.currentAdmin;
+		const propertyDoc = await Property.findById(paymentDoc?.propertyId);
 
 		// here after saving the document in DB we are constructing the full S# url and saving it in new field......
 		// if(paymentDoc.receiptProofUrl){
@@ -369,6 +370,13 @@ export const after_newPaymentHook = async (response, request, context) => {
 		await attachFullS3Link(paymentDoc, Payment, "receiptProofUrl", "receiptProofS3Url")
 
 		const latestTax = await paymentDone(paymentDoc)
+
+		// =========== Step 3 : Generating the Reciept PDF and Storing that on S3 =============
+		try {
+			await generateReciept(propertyDoc, latestTax)
+		} catch (err) {
+			errorLogger(err, "")
+		}
 
 		// audit the log of payment modification
 		await logAuditAction(null, currentUser?._id, "", latestTax?.taxStatus == "paid" ? "Whole Payment Done" : "Payment Registered", paymentDoc?._id)
@@ -402,6 +410,7 @@ export const after_newARVModificationHook = async(response , request , context)=
 		const changedARVDoc = response.record.params;
 		const currentUser = context.currentAdmin;
 		const {propertyId} = changedARVDoc;
+		const propertyDoc = await Property.findById(propertyId);
 
 		// ================= Step 1 : Fetching Old Tax Model ======================
 		const prevTax = await Tax.findOne({propertyId}).sort({createdAt : -1}).lean();
@@ -413,24 +422,35 @@ export const after_newARVModificationHook = async(response , request , context)=
 		// ================= Step 3 : get newARV and calculate newTotalTax = (tax + bakaya) ============
 		const newARV = changedARVDoc?.newArv;
 		const newTotalTax = calculateTaxes(newARV)?.totalTax + bakaya;
+		console.log("Bakaya is : " , bakaya)
 
 		// ================= Step 4 : creating a new tax document =======================
 		const tax = await Tax.create({
 			propertyId,
 			arv : newARV,
 			isModifiedARV : true,
+			bakaya,
 			totalTax : newTotalTax,
 			paidAmount : prevTax.paidAmount,
 			taxBreakdown : prevTax.taxBreakdown,
 			effectiveFrom : prevTax.effectiveFrom,
 			dueDate : prevTax.dueDate,
 			history : prevTax.history,
-			prevTaxPointer : prevTax?._id
+			prevTaxPointer : prevTax?._id,
+			taxWithoutBakaya : prevTax.taxWithoutBakaya
 		})
 
 		const changeHistoryDoc = await changeHistoryAction(prevTax , tax.toObject() , "ARV" , changedARVDoc?._id  , currentUser?._id)
 
+		// =========== Step 5 : Generating the Reciept PDF and Storing that on S3 =============
+		try {
+			await generateReciept(propertyDoc, tax)
+		} catch (err) {
+			errorLogger(err, "")
+		}
+
 		await logAuditAction(changeHistoryDoc?._id , currentUser?._id , "ARV MODIFICATION" , "ARV" , changedARVDoc?._id)
+
 
 		return response;
 

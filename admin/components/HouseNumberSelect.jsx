@@ -250,6 +250,10 @@ const HouseNumberInput = ({ property, record, onChange }) => {
         if (foundData.PTIN) {
           onChange('PTIN', foundData.PTIN);
         }
+        if(foundData?.ward){
+          onChange('ward' , foundData.ward)
+        }
+
       }, 0);
 
       setMessage({ 

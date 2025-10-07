@@ -84,7 +84,7 @@ const propertySchema = new mongoose.Schema({
   address: { type: String, trim: true },
   religion: { type: String, enum: ["Hindu", "Muslim", "Christian", "Others"] },
   gender: { type: String, enum: ["male", "female", "others"] },
-  mobile: { type: Number },
+  // mobile: { type: Number },
   aadharNumber: { type: Number },
   propertyName: { type: String, trim: true },
   sequenceNumber: { type: Number },

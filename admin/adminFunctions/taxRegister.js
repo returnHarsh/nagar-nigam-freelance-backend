@@ -82,14 +82,15 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
                 propertyId : prevTax?.propertyId,
                 arv : totalArv,
                 totalTax : totalTax,
+                bakaya : prevTax?.bakaya,
                 taxStatus : prevTax?.taxStatus,
                 paidAmount : prevTax?.paidAmount,
                 taxBreakdown : taxDetail,
                 effectiveFrom : prevTax?.startDate,
                 dueDate : prevTax?.endDate,
                 history : prevTax?.history,
-                prevTaxPointer : prevTax?._id
-                // dueAmount : totalTax - prevTax.paidAmount,
+                prevTaxPointer : prevTax?._id,
+                taxWithoutBakaya : prevTax?.taxWithoutBakaya,
             })
             console.log("NEW TAX SAVED IS : " , tax)
 
@@ -117,6 +118,8 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
                 propertyId: property?._id,
                 arv: totalArv,
                 totalTax : totalTax + bakaya,
+                taxWithoutBakaya : totalTax,
+                bakaya : bakaya,
                 taxStatus: "pending",
                 dueAmount: totalTax + bakaya,
                 paidAmount: 0,

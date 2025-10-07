@@ -14,7 +14,8 @@ const ModifyARVComponent = (props) => {
     bakaya : 0,
     loading: false,
     calculating: false,
-    error: null
+    error: null,
+    dueTax : null,
   })
 
   /**
@@ -39,7 +40,9 @@ const ModifyARVComponent = (props) => {
           currentTotalTax: response.data?.data?.currentTotalTax || 0,
           bakaya : response.data?.data?.bakaya || 0,
           loading: false,
-          error: response.data?.data?.error || null
+          error: response.data?.data?.error || null,
+          dueAmount : response.data?.data?.dueAmount,
+          paidAmount : response?.data?.data?.paidAmount || 0
         }))
       } else {
         setState(prev => ({
@@ -264,6 +267,7 @@ const ModifyARVComponent = (props) => {
               <span>{state.currentARV?.toLocaleString('en-IN') || '0'}</span>
             </div>
           </div>
+
           <div style={statBoxStyle}>
             <div style={labelStyle}>Current Total Tax</div>
             <div style={valueStyle}>
@@ -271,6 +275,23 @@ const ModifyARVComponent = (props) => {
               <span>{state.currentTotalTax?.toLocaleString('en-IN') || '0'}</span>
             </div>
           </div>
+
+          <div style={statBoxStyle}>
+            <div style={labelStyle}>Due Amount</div>
+            <div style={valueStyle}>
+              <span style={{ fontSize: "18px" }}>₹</span>
+              <span>{state.dueAmount?.toLocaleString('en-IN') || '0'}</span>
+            </div>
+          </div>
+
+          <div style={statBoxStyle}>
+            <div style={labelStyle}>Total Paid Amount</div>
+            <div style={valueStyle}>
+              <span style={{ fontSize: "18px" }}>₹</span>
+              <span>{state.paidAmount?.toLocaleString('en-IN') || '0'}</span>
+            </div>
+          </div>
+
         </div>
 
         {/* ARV Estimator */}
@@ -294,6 +315,7 @@ const ModifyARVComponent = (props) => {
 
         {/* Estimated Tax Result */}
         {state.estimatedNewTax !== null && (
+          <>
           <div style={estimatedTaxStyle}>
             <div style={labelStyle}>Estimated Total Tax</div>
             <div style={{ ...valueStyle, color: "#4CAF50" }}>
@@ -304,7 +326,22 @@ const ModifyARVComponent = (props) => {
               Tax difference: ₹{Math.abs(state.estimatedNewTax - state.currentTotalTax).toLocaleString('en-IN')}
               {state.estimatedNewTax > state.currentTotalTax ? ' (increase ↑)' : ' (decrease ↓)'}
             </div>
+            
           </div>
+
+          <div style={estimatedTaxStyle}>
+            <div style={labelStyle}> New Amount To Paid</div>
+            <div style={{ ...valueStyle, color: "#4CAF50" }}>
+              <span style={{ fontSize: "18px" }}>₹</span>
+              <span>{ (state.estimatedNewTax - state.paidAmount).toLocaleString('en-IN') }</span>
+            </div>
+            {/* <div style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+              Tax difference: ₹{Math.abs(state.estimatedNewTax - state.currentTotalTax).toLocaleString('en-IN')}
+              {state.estimatedNewTax > state.currentTotalTax ? ' (increase ↑)' : ' (decrease ↓)'}
+            </div> */}
+            
+          </div>
+          </>
         )}
 
         {/* Info Box */}

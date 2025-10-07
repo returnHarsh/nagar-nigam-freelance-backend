@@ -20,13 +20,15 @@ export const paymentDone = async(paymentDoc)=>{
 		checkPaymentAmount(paymentDoc , propertyTax);
 
 
-		const isWholeTaxPaid = (propertyTax.dueAmount - paymentDoc.amountPaid) == 0
+		const isWholeTaxPaid = (propertyTax.dueAmount <= paymentDoc.amountPaid)
 
 		// ========== now we have found the tax associated with this property , now we have to update the tax ============
 		const newUpdatedTax = await Tax.create({
 			propertyId : propertyTax?.propertyId,
 			arv : propertyTax.arv,
 			totalTax : propertyTax.totalTax,
+			taxWithoutBakaya : propertyTax?.taxWithoutBakaya,
+			bakaya : propertyTax?.bakaya,
 			taxStatus : isWholeTaxPaid ? "paid" : "partial",
 			paidAmount : (propertyTax.paidAmount + paymentDoc.amountPaid),
 			taxBreakdown : propertyTax.taxBreakdown,

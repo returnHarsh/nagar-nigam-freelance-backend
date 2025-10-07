@@ -5,6 +5,7 @@ import { customAlphabet } from "nanoid";
 
 const nagarNigamSchema = new mongoose.Schema({
 	houseNumber : {type : String},
+	ward : {type : String},
 	ownerName : {type : String},
 	fatherName : {type : String},
 	prevHouseTax : {type : Number},

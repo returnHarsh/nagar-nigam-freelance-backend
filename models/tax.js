@@ -14,7 +14,9 @@ const TaxSchema = new mongoose.Schema({
 	effectiveFrom : {type : Date},
 	dueDate : {type : Date},
 	history : [{ type : mongoose.Schema.Types.ObjectId , ref : 'Payment' , _id : false }],
-	prevTaxPointer : {type : mongoose.Schema.Types.ObjectId , ref : "Tax"}
+	prevTaxPointer : {type : mongoose.Schema.Types.ObjectId , ref : "Tax"},
+	bakaya : {type : Number},
+	taxWithoutBakaya : {type : Number},
 
 } , {timestamps : true})
 

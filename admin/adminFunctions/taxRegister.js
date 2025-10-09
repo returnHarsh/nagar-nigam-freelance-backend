@@ -108,9 +108,12 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
             const preNagarNigamData = await NagarNigamProperty.findOne({ownerName : property.ownerName , fatherName : property.fatherName , houseNumber : property.houseNumber}).session(session)
             console.log("NAGAR NIGAM DATA : " , preNagarNigamData);
             const bakaya = isNaN(Number(preNagarNigamData?.prevTax)) ? 0 : Number(preNagarNigamData?.prevTax)
-            preNagarNigamData.PTIN = property.PTIN;
-            preNagarNigamData.propertyId = property._id;
-            await preNagarNigamData.save({session})
+            console.log("bakaya during tax calculation is : " , bakaya)
+            if(preNagarNigamData){
+                preNagarNigamData.PTIN = property.PTIN;
+                preNagarNigamData.propertyId = property._id;
+                await preNagarNigamData.save({session})
+            }
 
 
             // =================== First Time Creating The Tax Document For This Property ====================

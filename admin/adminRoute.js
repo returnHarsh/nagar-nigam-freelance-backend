@@ -242,9 +242,17 @@ const adminJs = new AdminJS({
           // }
         },
         properties: {
+
+          // ========= need to uncomment =========
           houseNumber: {
             components: { edit: AdminCustomComponents.HouseNumberSelect }
           },
+          // // field that the surveyor cannot change
+          // fatherName: { isDisabled: true },
+          // ownerName: { isDisabled: true },
+
+          // ========== up until here ============
+
           displayId: { isTitle: true },
           editProof: {
             isVisible: { edit: true, new: false }
@@ -261,10 +269,6 @@ const adminJs = new AdminJS({
           ownerInterviewer: { isVisible: false },
           IDProof: { isVisible: false },
           houseFrontWithNamePlate: { isVisible: false },
-
-          // field that the surveyor cannot change
-          fatherName: { isDisabled: true },
-          ownerName: { isDisabled: true },
 
           tax : {
             isVisible : {show : true , edit : false},

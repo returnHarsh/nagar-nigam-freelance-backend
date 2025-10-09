@@ -162,6 +162,7 @@ export const before_createNewProperty = async (request, context) => {
 
 		console.log("NEW->BEFORE PROPERTY")
 
+		console.log("BEFORE PROPERTY DATA IS : " , request.payload)
 		// ********************************** here we are creating new property ********************************
 
 		const propertyDoc = request.payload;

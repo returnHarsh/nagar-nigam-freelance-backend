@@ -160,6 +160,7 @@ const api = new ApiClient();
 
 const HouseNumberInput = ({ property, record, onChange }) => {
   const [inputValue, setInputValue] = useState(record?.params?.[property.path || property.name] || '');
+  const[ward] = useState(record?.params?.ward)
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -171,8 +172,10 @@ const HouseNumberInput = ({ property, record, onChange }) => {
   }, [record?.params, property.path, property.name]);
 
   const fetchHouseData = async (houseNumber) => {
-    if (!houseNumber || houseNumber.trim() === '') {
-      setMessage({ text: 'Please enter a house number', type: 'error' });
+    if (!houseNumber || houseNumber.trim() === '' || !ward) {
+      // setMessage({ text: 'Please enter a house number and ward', type: 'error' });
+      setMessage({ text: 'No records available for this house number or ward', type: 'error' });
+      onChange('houseNumber' , houseNumber)
       return;
     }
 
@@ -207,7 +210,7 @@ const HouseNumberInput = ({ property, record, onChange }) => {
 
         // Search for exact match in current page
         const matchingRecord = records.find(r => 
-          r.params.houseNumber === searchValue
+          (r.params.houseNumber === searchValue && ward)
         );
 
         if (matchingRecord) {

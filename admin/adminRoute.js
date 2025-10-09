@@ -248,8 +248,8 @@ const adminJs = new AdminJS({
             components: { edit: AdminCustomComponents.HouseNumberSelect }
           },
           // // field that the surveyor cannot change
-          // fatherName: { isDisabled: true },
-          // ownerName: { isDisabled: true },
+           fatherName: { isDisabled: false },
+           ownerName: { isDisabled: false },
 
           // ========== up until here ============
 

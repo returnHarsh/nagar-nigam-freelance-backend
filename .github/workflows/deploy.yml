@@ -45,7 +45,7 @@ jobs:
           npm install &&
           
           # Restart PM2 process
-          pm2 restart nagar-nigam-server &&
+          pm2 restart backend &&
           
           echo "Deployment completed successfully!"
         '

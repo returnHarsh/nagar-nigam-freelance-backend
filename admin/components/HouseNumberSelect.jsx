@@ -253,8 +253,11 @@ const HouseNumberInput = ({ property, record, onChange }) => {
         if (foundData.PTIN) {
           onChange('PTIN', foundData.PTIN);
         }
-        if(foundData?.ward){
+        if(foundData?.war){
           onChange('ward' , foundData.ward)
+        }
+        if(foundData?.wardNumber){
+          onChange('wardNumber' , foundData?.wardNumber)
         }
 
       }, 0);

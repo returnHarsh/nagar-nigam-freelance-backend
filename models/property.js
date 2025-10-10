@@ -62,6 +62,7 @@ const propertySchema = new mongoose.Schema({
 
   PTIN : {type : String , trim : true},
   ward: { type: String, trim: true },
+  wardNumber : {type : Number},
   locality: { type: String, trim: true },
   houseNumber: { type: String, trim: true },
   isEmptyProperty: { type: Boolean, default: false },

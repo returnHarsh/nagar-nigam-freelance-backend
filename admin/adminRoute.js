@@ -28,8 +28,9 @@ import { s3, uploadToS3 } from "../config/S3.js";
 import { NagarNigamProperty } from "../models/nagarNigamProperty.js"
 import { Tax } from "../models/tax.js";
 import { generateTaxBillPDF } from "./actions/generateReciept.js";
-import {ARVModification} from "../models/arvModification.js"
+import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
+import { PropertyWardDetail } from "../models/wardDataMapping.js";
 
 
 // lets create the uploads folder is it doens'nt exist
@@ -71,9 +72,13 @@ const AdminCustomComponents = {
     'GenerateTaxBillComp',
     path.resolve(__dirname, './components/GenerateAndDownloadPdf.jsx')
   ),
-  ModifyARVComponent : componentLoader.add(
-    'ModifyARVComponent' ,
-    path.resolve(__dirname , './components/ModifyARVComponent.jsx')
+  ModifyARVComponent: componentLoader.add(
+    'ModifyARVComponent',
+    path.resolve(__dirname, './components/ModifyARVComponent.jsx')
+  ),
+  PropertyWardSelector: componentLoader.add(
+    'PropertyWardSelector',
+    path.resolve(__dirname, './components/PropertyWardSelector.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -87,10 +92,10 @@ AdminJS.registerAdapter(AdminJSMongoose);
 
 const adminJs = new AdminJS({
   resources: [
-    { 
+    {
       resource: User,
       options: {
-        navigation: {name : "Admin Only", icon : "User" , isAccessible : ({currentAdmin}) => (currentAdmin.role == "admin") },
+        navigation: { name: "Admin Only", icon: "User", isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin") },
         actions: {
           isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           new: {
@@ -103,7 +108,7 @@ const adminJs = new AdminJS({
             before: before_editUser,
             after: after_editUser
           },
-           list: {
+          list: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           delete: {
@@ -247,10 +252,30 @@ const adminJs = new AdminJS({
           houseNumber: {
             components: { edit: AdminCustomComponents.HouseNumberSelect }
           },
+          ward: {
+            components: { edit: AdminCustomComponents.PropertyWardSelector }
+          },
           // // field that the surveyor cannot change
-           fatherName: { isDisabled: false },
-           ownerName: { isDisabled: false },
-
+          // fatherName: { isDisabled: true },
+          // ownerName: { isDisabled: true },
+          locality: {
+            isVisible: {
+              list: true,  
+              filter: true,
+              show: true,  
+              edit: false, 
+              new: false   
+            }
+          },
+          wardNumber: {
+            isVisible: {
+              list: true,  
+              filter: true,
+              show: true,  
+              edit: false, 
+              new: false   
+            }
+          },
           // ========== up until here ============
 
           displayId: { isTitle: true },
@@ -270,8 +295,8 @@ const adminJs = new AdminJS({
           IDProof: { isVisible: false },
           houseFrontWithNamePlate: { isVisible: false },
 
-          tax : {
-            isVisible : {show : true , edit : false},
+          tax: {
+            isVisible: { show: true, edit: false },
           },
 
           latestBillUrl: {
@@ -370,7 +395,7 @@ const adminJs = new AdminJS({
     {
       resource: NagarNigamProperty,
       options: {
-        navigation : {name : "Admin Only" , icon : "User"},
+        navigation: { name: "Admin Only", icon: "User" },
         actions: {
           new: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
@@ -378,14 +403,14 @@ const adminJs = new AdminJS({
           edit: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
-           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+          list: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           delete: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           uploadNagarNigamData: {
             actionType: 'resource',
@@ -496,7 +521,7 @@ const adminJs = new AdminJS({
             //     };
             //   }
             // }
-            handler : bulkUploadNagarNigamData
+            handler: bulkUploadNagarNigamData
 
           }
         }
@@ -582,7 +607,7 @@ const adminJs = new AdminJS({
         })
       ],
       options: {
-        navigation: {name : "Officials" , icon : "Shield"},
+        navigation: { name: "Officials", icon: "Shield" },
         actions: {
           new: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
@@ -590,14 +615,14 @@ const adminJs = new AdminJS({
             after: after_newPaymentHook
           },
           edit: { isAccessible: false },
-           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+          list: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           delete: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
         },
         properties: {
@@ -619,7 +644,7 @@ const adminJs = new AdminJS({
     {
       resource: Tax,
       options: {
-        navigation : {name : "Officials" , icon : "Shield"},
+        navigation: { name: "Officials", icon: "Shield" },
         actions: {
           new: {
             isAccessible: false
@@ -628,14 +653,14 @@ const adminJs = new AdminJS({
             // isAccessible : ({currentAdmin})=> (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
             isAccessible: false
           },
-           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+          list: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           delete: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           getTaxDetails: {
             actionType: 'record',
@@ -695,7 +720,7 @@ const adminJs = new AdminJS({
             }
           },
           getTaxARV: {
-            isVisible : false,
+            isVisible: false,
             actionType: 'record',
             handler: async (request, response, context) => {
               try {
@@ -713,33 +738,33 @@ const adminJs = new AdminJS({
                   };
                 }
 
-                const latestTax = await Tax.findOne({propertyId}).sort({createdAt : -1}).lean();
-                console.log("Latest Tax is : " , latestTax)
-                if(!latestTax) return {
-                  record : {},
-                  data : { currentARV : 0 , currentTotalTax : 0 , error : 'Tax document not found'}
+                const latestTax = await Tax.findOne({ propertyId }).sort({ createdAt: -1 }).lean();
+                console.log("Latest Tax is : ", latestTax)
+                if (!latestTax) return {
+                  record: {},
+                  data: { currentARV: 0, currentTotalTax: 0, error: 'Tax document not found' }
                 }
 
                 const property = await Property.findById(propertyId)
 
-                const prePropertyByNagarNigam = await NagarNigamProperty.findOne({fatherName : property?.fatherName , ownerName : property?.ownerName , houseNumber : property?.houseNumber })
+                const prePropertyByNagarNigam = await NagarNigamProperty.findOne({ fatherName: property?.fatherName, ownerName: property?.ownerName, houseNumber: property?.houseNumber })
 
                 let bakaya = 0;
-                if(prePropertyByNagarNigam){
+                if (prePropertyByNagarNigam) {
                   bakaya = prePropertyByNagarNigam?.prevTax
                 }
 
                 return {
-                  record : {},
-                  data : {currentARV : latestTax.arv , currentTotalTax : latestTax.totalTax , bakaya , dueAmount : latestTax?.dueAmount , paidAmount : latestTax?.paidAmount , error : null}
+                  record: {},
+                  data: { currentARV: latestTax.arv, currentTotalTax: latestTax.totalTax, bakaya, dueAmount: latestTax?.dueAmount, paidAmount: latestTax?.paidAmount, error: null }
                 }
 
 
               } catch (err) {
-                console.log("[ERROR] in action getTaxARV : " , err.message);
+                console.log("[ERROR] in action getTaxARV : ", err.message);
                 return {
-                  record : {},
-                  data : {currentARV : null , currentTotalTax : null , error : err.message}
+                  record: {},
+                  data: { currentARV: null, currentTotalTax: null, error: err.message }
                 }
               }
             }
@@ -748,7 +773,7 @@ const adminJs = new AdminJS({
       }
     },
     {
-      resource : ARVModification,
+      resource: ARVModification,
       features: [
         uploadFeature({
           provider: {
@@ -771,42 +796,75 @@ const adminJs = new AdminJS({
           componentLoader
         })
       ],
-      options : {
-        navigation : {name : "Officials" , icon : "Shield"},
-        actions : {
-          new : {
-            isAccessible : ({currentAdmin}) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin"),
-            after : after_newARVModificationHook
+      options: {
+        navigation: { name: "Officials", icon: "Shield" },
+        actions: {
+          new: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin"),
+            after: after_newARVModificationHook
           },
-          edit : {
+          edit: {
             // isAccessible : ({currentAdmin}) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin")
-            isAccessible : false
+            isAccessible: false
           },
-           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+          list: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           delete: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" ),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
         },
-        properties : {
-          arvModificationWidget : {
-            type : 'mixed',
-            isVisible : {
-              list : false,
-              edit : true,
-              show : true,
-              filter : false
+        properties: {
+          arvModificationWidget: {
+            type: 'mixed',
+            isVisible: {
+              list: false,
+              edit: true,
+              show: true,
+              filter: false
             },
-            components : {
+            components: {
               edit: AdminCustomComponents.ModifyARVComponent,
               show: AdminCustomComponents.ModifyARVComponent
             }
           },
-          modificationProof : {isVisible : false}
+          modificationProof: { isVisible: false }
+        }
+      }
+    },
+    {
+      resource: PropertyWardDetail,
+      options: {
+        navigation: 'Admin Only',
+        actions: {
+          getWardDetails: {
+            actionType: 'record',
+            handler: async (request, response, context) => {
+              try {
+                // =========== here we have to return all the ward details ==================
+
+                const propertyWardDetail = await PropertyWardDetail.find({}).lean();
+
+                return {
+                  record: {},
+                  data: {
+                    propertyWardDetail
+                  }
+                }
+
+              } catch (err) {
+                console.log('[ERROR] inside the handler function of getWardDetails');
+                return {
+                  record: {},
+                  data: null,
+                  error: `Error fetching all the poproprtyWard data : ${err.message} `
+                }
+              }
+            }
+          }
         }
       }
     }

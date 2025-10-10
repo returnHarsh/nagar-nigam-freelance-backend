@@ -15,6 +15,8 @@ import GenerateTaxBillComp from '../admin/components/GenerateAndDownloadPdf'
 AdminJS.UserComponents.GenerateTaxBillComp = GenerateTaxBillComp
 import ModifyARVComponent from '../admin/components/ModifyARVComponent'
 AdminJS.UserComponents.ModifyARVComponent = ModifyARVComponent
+import PropertyWardSelector from '../admin/components/PropertyWardSelector'
+AdminJS.UserComponents.PropertyWardSelector = PropertyWardSelector
 import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
 AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
 import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'

@@ -9,6 +9,8 @@ console.log('AWS_REGION:', process.env.AWS_REGION);
 import { errorLogger, errorMiddleware } from "./utils/errorLogger.js";
 import {adminRouter} from "./admin/adminRoute.js"
 import {sessionMiddleware} from "./middlewares/sessionMiddleware.js"
+import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
+
 
 // importing routes
 // import {router as adminDashboardRoutes} from "./routes/adminDashboardRoutes.js"
@@ -28,6 +30,7 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 
 // registering the adminjs
 app.use("/admin" , adminRouter)
+app.use("/admin-internals/bulk-generate-bill" , interalAdminRoutes)
 
 
 
@@ -36,8 +39,11 @@ app.use(express.json())
 app.use(express.urlencoded({extended : true}))
 
 
+
 // health check route 
-app.get("/" , (_,res)=>{
+app.get("/" , (req,res)=>{
+	console.log("Host Header : " , req.headers.host )
+	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 

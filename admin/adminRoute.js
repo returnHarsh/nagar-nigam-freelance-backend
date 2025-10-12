@@ -7,6 +7,9 @@ import path from "path"
 import XLSX from "xlsx"
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { spawn } from 'child_process';
+import fsSync from 'fs';
+import fsPromises from "fs/promises"
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -31,7 +34,8 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-
+import { runPythonScript } from "./actions/bulkUploadProcessedData.js";
+import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 
 // lets create the uploads folder is it doens'nt exist
 const isUploadDir = path.join(process.cwd(), "uploads");
@@ -79,6 +83,14 @@ const AdminCustomComponents = {
   PropertyWardSelector: componentLoader.add(
     'PropertyWardSelector',
     path.resolve(__dirname, './components/PropertyWardSelector.jsx')
+  ),
+  UploadBulkProperties: componentLoader.add(
+    'UploadBulkProperties',
+    path.resolve(__dirname, './components/UploadBulkProperties.jsx')
+  ),
+  BulkBillDownload : componentLoader.add(
+    'BulkBillDownload' , 
+    path.resolve(__dirname , './components/BulkBillDownload.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -166,85 +178,106 @@ const adminJs = new AdminJS({
                 record: context.record.toJSON(context.currentAdmin),
               };
             }
+          },
+          
+          importPropertiesWithUI: {
+            actionType: 'resource',
+            icon: 'Upload',
+            label: 'Import Properties',
+
+            handler: async (request, response, context) => {
+              const { method } = request;
+
+              // GET: Show upload form
+              // if (method === 'get') {
+              //   return {
+              //     uploadUrl: '/admin/api/resources/Property/actions/importProperties'
+              //   };
+              // }
+
+              // POST: Handle file upload
+              if (method === 'post') {
+                const { file , fileName } = request.payload || {};
+
+                if (!file) {
+                  return {
+                    notice: {
+                      type: 'error',
+                      message: 'Please upload an Excel file'
+                    }
+                  };
+                }
+
+                 // ====== Decode base64 file (converting the file base64 string to buffer) ========
+                const base64Data = file.split(',')[1];
+                const buffer = Buffer.from(base64Data, 'base64');
+
+                try {
+                  const uploadDir = path.join(__dirname, '../uploads');
+
+                  if (!fsSync.existsSync(uploadDir)) {
+                    fsSync.mkdirSync(uploadDir, { recursive: true });
+                  }
+
+                  const timestamp = Date.now();
+                  const filePath = path.join(uploadDir, `${timestamp}_${fileName}`);
+
+                  fs.writeFileSync(filePath, buffer);
+
+                  const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
+                  const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "karhal" );
+
+                  await fsPromises.unlink(filePath).catch(err => console.error(err));
+
+                  return {
+                    notice: {
+                      type: 'success',
+                      message: result.message
+                    },
+                    record: {
+                      params: {
+                        importedCount: result.insertedCount,
+                        duplicatesSkipped: result.duplicatesSkipped,
+                        totalProcessed: result.totalProcessed
+                      }
+                    }
+                  };
+
+                } catch (error) {
+                  console.error('Import error:', error);
+
+                  return {
+                    notice: {
+                      type: 'error',
+                      message: `Import failed: ${error.message}`
+                    }
+                  };
+                }
+              }
+            },
+            component: AdminCustomComponents.UploadBulkProperties
+          },
+
+          bulkDownload : {
+            actionType: 'resource',
+            icon: 'Printer',
+            label: 'Download All Bills',
+            component : AdminCustomComponents.BulkBillDownload,
+            handler : generateAndDownloadBulkBill
+            // handler : async(request , response , context)=>{
+              
+            // return {
+            //   redirectUrl: "/admin-internals/bulk-generate-bill",
+            //   notice: {
+            //     message: 'Bulk bill PDF generated successfully!',
+            //     type: 'success',
+            //   },
+            // };
+
+              
+            // }
           }
-          // generateTaxBill: {
-          //   actionType: 'record',
-          //   icon: 'Receipt',
-          //   label: 'Generate Tax Bill',
-          //   component: false,
-          //   guard: 'Generate tax bill PDF?',
-          //   handler: async (request, response, context) => {
-          //     try {
-          //       const propertyId = context.record.id();
-          //       const property = await Property.findById(propertyId).lean();
-
-          //       if (!property) {
-          //         throw new Error('Property not found');
-          //       }
-
-          //       // Get latest tax
-          //       const latestTax = await Tax.findOne({ propertyId })
-          //         .sort({ createdAt: -1 })
-          //         .lean();
-
-          //       if (!latestTax) {
-          //         return {
-          //           record: context.record.toJSON(context.currentAdmin),
-          //           notice: {
-          //             message: 'No tax record found. Create a tax entry first.',
-          //             type: 'error'
-          //           }
-          //         };
-          //       }
-
-          //       // Generate PDF
-          //       const pdfBuffer = await generateTaxBillPDF(property, latestTax);
-
-          //       // Upload to S3
-          //       const pdfFilename = `tax-bill-${property.PTIN}-${Date.now()}.pdf`;
-          //       const s3Key = `bills/${pdfFilename}`;
-
-          //       const creds = await s3().config.credentials();
-          //       console.log("Resolved credentials:", creds);
-
-          //       // await s3().send(new PutObjectCommand({
-          //       //   Bucket: process.env.AWS_BUCKET,
-          //       //   Key: s3Key,
-          //       //   Body: pdfBuffer,
-          //       //   ContentType: 'application/pdf'
-          //       // }));
-
-          //       await uploadToS3(process.env.AWS_BUCKET , s3Key , pdfBuffer , 'application/pdf')
-
-          //       const pdfUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-
-          //       // Update property
-          //       await Property.findByIdAndUpdate(propertyId, {
-          //         latestBillUrl: pdfUrl,
-          //         lastBillGeneratedAt: new Date()
-          //       });
-
-          //       return {
-          //         record: context.record.toJSON(context.currentAdmin),
-          //         notice: {
-          //           message: 'Tax bill generated successfully!',
-          //           type: 'success'
-          //         },
-          //         redirectUrl: pdfUrl
-          //       };
-
-          //     } catch (err) {
-          //       console.error('PDF generation error:', err);
-          //       return {
-          //         record: context.record.toJSON(context.currentAdmin),
-          //         notice: {
-          //           message: `Error: ${err.message}`,
-          //           type: 'error'
-          //         }
-          //       };
-          //     }
-          //   }
-          // }
+          
         },
         properties: {
 
@@ -260,20 +293,20 @@ const adminJs = new AdminJS({
           // ownerName: { isDisabled: true },
           locality: {
             isVisible: {
-              list: true,  
+              list: true,
               filter: true,
-              show: true,  
-              edit: false, 
-              new: false   
+              show: true,
+              edit: false,
+              new: false
             }
           },
           wardNumber: {
             isVisible: {
-              list: true,  
+              list: true,
               filter: true,
-              show: true,  
-              edit: false, 
-              new: false   
+              show: true,
+              edit: false,
+              new: false
             }
           },
           // ========== up until here ============

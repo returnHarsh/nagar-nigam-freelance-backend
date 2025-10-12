@@ -324,7 +324,14 @@ export const after_editNewProperty = async (response, request, context) => {
 
 		if (taxDetails) {
 			// now tag calculated again so we have to create a new tax document and map that with property and if for the same property 
-			await createTaxModel(taxDetails, newDoc)
+			const latestTax = await createTaxModel(taxDetails, newDoc)
+
+			// now also generate the new pdf for this newly generated tax
+			try {
+			await generateReciept(newDoc, latestTax)
+		} catch (err) {
+			errorLogger(err, "")
+		}
 		}
 
 

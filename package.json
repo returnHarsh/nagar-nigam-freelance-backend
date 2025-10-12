@@ -17,6 +17,7 @@
     "@adminjs/upload": "^4.0.2",
     "@aws-sdk/client-s3": "^3.901.0",
     "adminjs": "^7.8.17",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
@@ -27,6 +28,7 @@
     "multer": "^2.0.2",
     "nanoid": "^5.1.6",
     "nodemon": "^3.1.10",
+    "pdf-lib": "^1.17.1",
     "puppeteer": "^24.23.0",
     "xlsx": "^0.18.5"
   }

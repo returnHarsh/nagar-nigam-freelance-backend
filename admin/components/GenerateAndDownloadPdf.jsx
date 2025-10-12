@@ -7,7 +7,7 @@ const PrintPdfButton = (props) => {
   console.log("records in generate reciept is : " , record)
 
   if (!record?.params?.latestBillUrl) {
-    return null;
+    return <div> No Bill Present For This Property</div>;
   }
 
   const handlePrint = () => {
@@ -18,12 +18,14 @@ const PrintPdfButton = (props) => {
   };
 
   return (
-    <Button
+   <div>
+     <Button
       variant="primary"
       onClick={handlePrint}
     >
       🖨 Print Tax Bill
     </Button>
+   </div>
   );
 };
 

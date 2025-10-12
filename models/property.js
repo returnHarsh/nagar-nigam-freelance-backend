@@ -61,15 +61,15 @@ const surroundingSchema = new mongoose.Schema({
 const propertySchema = new mongoose.Schema({
 
   PTIN : {type : String , trim : true},
-  ward: { type: String, trim: true },
-  wardNumber : {type : String},
-  locality: { type: String, trim: true },
-  houseNumber: { type: String, trim: true },
+  ward: { type: String, trim: true , required : true},
+  wardNumber : {type : String ,  required : true},
+  locality: { type: String, trim: true , required : true},
+  houseNumber: { type: String, trim: true ,  required : true},
   isEmptyProperty: { type: Boolean, default: false },
   districtCode : {type : String , required : true},
 
   // Interview & ownership
-  interviewerName: { type: String, trim: true },
+  interviewerName: { type: String, trim: true , required : true},
   fatherName: { type: String, trim: true },
   relationWithOwner: {
     type: String,
@@ -77,12 +77,12 @@ const propertySchema = new mongoose.Schema({
   },
   ownerName: { type: String, trim: true },
   guardianName: { type: String, trim: true },
-  phoneNumber : {type : Number},
+  phoneNumber : {type : Number , required : true},
 
   // Property info
   constructionYear: { type: Number },
-  pinCode: { type: Number },
-  address: { type: String, trim: true },
+  pinCode: { type: Number , required : true },
+  address: { type: String, trim: true , required : true},
   religion: { type: String, enum: ["Hindu", "Muslim", "Christian", "Others"] },
   gender: { type: String, enum: ["male", "female", "others"] },
   // mobile: { type: Number },
@@ -91,10 +91,10 @@ const propertySchema = new mongoose.Schema({
   sequenceNumber: { type: Number },
   email : {type : String , trim : true},
 
-  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"]},
-  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : true },
-  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true},
-  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true},
+  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"] , required : true},
+  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : true , required : true},
+  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true , required : true},
+  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true , required : true},
 
   numberOfToilets: { type: Number, default: 0 },
 
@@ -118,7 +118,7 @@ const propertySchema = new mongoose.Schema({
   houseFrontWithNamePlate: { type: String },
 
   isSurveyVerified: { type: Boolean , default : false},
-  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' },
+  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' , required : true },
 
   propertyGroup : {type : String , enum : ["governmentOffices" , "schoolsAndColleges" , "hospitalsAndClinics" , "parksAndRecreation" , "transportHubs" , "localShops"]},
 

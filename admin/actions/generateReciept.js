@@ -1,5 +1,6 @@
 // services/pdfGenerator.js
 import puppeteer from 'puppeteer';
+import fs from "fs"
 import { NagarNigamProperty } from '../../models/nagarNigamProperty.js';
 
 export const generateTaxBillPDF = async (property, tax) => {
@@ -50,6 +51,16 @@ export const generateTaxBillPDF = async (property, tax) => {
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+    // ✅ Load Devanagari + Latin font locally and embed in Base64
+  const fontPath = '/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf';
+  const fallbackFontPath = '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf';
+  const devanagariFont = fs.existsSync(fontPath)
+    ? fs.readFileSync(fontPath).toString('base64')
+    : '';
+  const englishFont = fs.existsSync(fallbackFontPath)
+    ? fs.readFileSync(fallbackFontPath).toString('base64')
+    : '';
+
   const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -58,12 +69,31 @@ export const generateTaxBillPDF = async (property, tax) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Property Tax Bill - ${property.PTIN}</title>
   <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      background: white;
-    }
+
+    /* Embed Hindi Font */
+      @font-face {
+        font-family: 'NotoSansDevanagari';
+        src: url(data:font/truetype;charset=utf-8;base64,${devanagariFont}) format('truetype');
+        font-weight: 400;
+        font-style: normal;
+      }
+         /* Embed English Font */
+      @font-face {
+        font-family: 'NotoSans';
+        src: url(data:font/truetype;charset=utf-8;base64,${englishFont}) format('truetype');
+        font-weight: 400;
+        font-style: normal;
+      }
+        
+
+        body {
+        font-family: 'NotoSansDevanagari', 'NotoSans', sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+        color: #000;
+      }
+
+
+
     @media print {
       body { background: white; }
     }
@@ -247,7 +277,8 @@ export const generateTaxBillPDF = async (property, tax) => {
 
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    executablePath: '/usr/bin/chromium-browser',
+    args: ['--no-sandbox', '--disable-setuid-sandbox' , '--font-render-hinting=medium' ,  '--enable-font-antialiasing' ]
   });
 
   const page = await browser.newPage();
@@ -256,6 +287,8 @@ export const generateTaxBillPDF = async (property, tax) => {
   const pdfBuffer = await page.pdf({
     format: 'A4',
     printBackground: true,
+    tagged: true,
+    displayHeaderFooter: false,
     margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
   });
 

@@ -946,7 +946,9 @@ const ADMIN_DUMMY = {
 }
 
 const dummyAuthenticate = async (email, password) => {
-  return ADMIN_DUMMY
+  if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
+  return null;
+  
 }
 
 const authenticate = async (email, password) => {

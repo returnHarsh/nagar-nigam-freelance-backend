@@ -439,13 +439,13 @@ export const after_newARVModificationHook = async(response , request , context)=
 			isModifiedARV : true,
 			bakaya,
 			totalTax : newTotalTax,
-			paidAmount : prevTax.paidAmount,
-			taxBreakdown : prevTax.taxBreakdown,
-			effectiveFrom : prevTax.effectiveFrom,
-			dueDate : prevTax.dueDate,
-			history : prevTax.history,
+			paidAmount : prevTax?.paidAmount,
+			taxBreakdown : prevTax?.taxBreakdown,
+			effectiveFrom : prevTax?.effectiveFrom,
+			dueDate : prevTax?.dueDate,
+			history : prevTax?.history,
 			prevTaxPointer : prevTax?._id,
-			taxWithoutBakaya : prevTax.taxWithoutBakaya
+			taxWithoutBakaya : prevTax?.taxWithoutBakaya
 		})
 
 		const changeHistoryDoc = await changeHistoryAction(prevTax , tax.toObject() , "ARV" , changedARVDoc?._id  , currentUser?._id)

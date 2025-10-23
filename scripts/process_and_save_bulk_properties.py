@@ -6,6 +6,7 @@ import sys
 from datetime import datetime
 from typing import List, Dict, Any
 import logging
+import random
 
 # Setup logging
 logging.basicConfig(
@@ -52,6 +53,12 @@ REQUIRED_COLUMNS = {
 }
 
 
+# ============= HELPER FUNCTIONS ============
+def generate_numeric_id(length=6):
+    """Generate a random numeric ID of specified length"""
+    return ''.join(random.choices('0123456789', k=length))
+
+
 class PropertyDataProcessor:
     def __init__(self, file_path: str, mongo_uri: str, db_name: str):
         self.file_path = file_path
@@ -60,13 +67,22 @@ class PropertyDataProcessor:
         self.client = None
         self.db = None
         self.collection = None
+        self.wardMapping = {}
         self.processed_data: List[Dict[str, Any]] = []
         
-    def is_duplicate(self , row):
-        return self.collection.findOne({
-			"ward": str(self.safe_get_value(row, "WARD NUMBER", "")),
-			"houseNumber": str(self.safe_get_value(row, "HOUSE_NUMBER", "")),
-		})
+    def is_duplicate(self, row):
+        """Check if a property with the same ward name and house number exists"""
+        ward = str(self.safe_get_value(row, "WARD", ""))        # ward name
+        house_number = str(self.safe_get_value(row, "HOUSE_NUMBER", ""))  # house number
+
+        duplicate = self.collection.find_one({
+            "ward": ward,
+            "houseNumber": house_number
+        })
+        return duplicate is not None
+
+    
+
 
     def connect_to_mongodb(self):
         """Establish MongoDB connection with error handling"""
@@ -173,6 +189,7 @@ class PropertyDataProcessor:
         """Process a single row and convert to schema format"""
         try:
             processed_row = {
+                "PTIN" : f"UP{self.safe_get_value(row , "DISTIRCT CODE" , "UP")}{generate_numeric_id()}",
                 "ward": str(self.safe_get_value(row, "WARD", "")),
                 "wardNumber": str(self.safe_get_value(row, "WARD NUMBER", "")),
                 "houseNumber": str(self.safe_get_value(row, "HOUSE_NUMBER", "")),
@@ -205,6 +222,9 @@ class PropertyDataProcessor:
         try:
             logger.info(f"📖 Reading Excel file: {self.file_path}")
             df = pd.read_excel(self.file_path)
+
+            # ✅ Remove leading/trailing spaces from column names
+            df.columns = df.columns.str.strip()
             
             total_rows = len(df)
             logger.info(f"📊 Found {total_rows} rows to process")

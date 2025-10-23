@@ -348,3 +348,67 @@ export const generateAndDownloadBulkBill = async (request, response, context) =>
 //     res.status(500).send('Error generating merged PDF');
 //   }
 // };
+
+
+export const getPropertyId = async (req, res) => {
+  try {
+    console.log("request body is : " , req.body)
+    let { PTIN } = req.body;
+    console.log("PTIN number requested:", PTIN);
+
+    if (!PTIN) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter the required field",
+      });
+    }
+
+    // first we have to remove the trailing spaces and gaps
+    PTIN = PTIN?.toString().trim();
+
+    const property = await Property.findOne({ PTIN }).lean();
+
+    console.log("property is : " , property)
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "No property found for the entered phone number",
+      });
+    }
+
+     const data =  {
+        propertyId: property._id,
+        ward: property.ward,
+        wardNumber : property?.wardNumber,
+        ownerName: property.ownerName,
+        fatherName: property.fatherName,
+        address: property.aadharNumber
+      }
+      console.log("data is : " , data)
+
+
+    // Return propertyId and other info
+    return res.status(200).json({
+      success: true,
+      message: "Found the property record",
+      data: {
+        propertyId: property._id,
+        ward: property.ward,
+        wardNumber : property?.wardNumber,
+        ownerName: property.ownerName,
+        fatherName: property.fatherName,
+        aadharNumber: property.aadharNumber,
+      },
+    });
+  } catch (err) {
+    console.error("[ERROR] in getPropertyId:", err);
+
+    // Always return a JSON response on error
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching property",
+      error: err?.message || "Unknown error",
+    });
+  }
+};

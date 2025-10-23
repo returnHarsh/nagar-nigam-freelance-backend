@@ -168,11 +168,11 @@ export const before_createNewProperty = async (request, context) => {
 		const propertyDoc = request.payload;
 		const floorsData = buildFloorsData(propertyDoc);
 		console.log("floors data is : ", floorsData);
-		if (!floorsData.numberOfFloors || !floorsData.floors?.length) validatonError("floorsData", "please fill the floors Data")
-		if (!propertyDoc.surveyor) validatonError("surveyor", "Please fill who is taking this survey")
-		if (!propertyDoc.propertyType) validatonError("propertyType", "Please fill the propertyType")
-		if (!propertyDoc.constructionType) validatonError("constructionType", "Please fill the construction type")
-		if (!propertyDoc.roadWidthType) validatonError("roadWidthType", "Please fill the roadWidthType")
+		// if (!floorsData.numberOfFloors || !floorsData.floors?.length) validatonError("floorsData", "please fill the floors Data")
+		// if (!propertyDoc.surveyor) validatonError("surveyor", "Please fill who is taking this survey")
+		// if (!propertyDoc.propertyType) validatonError("propertyType", "Please fill the propertyType")
+		// if (!propertyDoc.constructionType) validatonError("constructionType", "Please fill the construction type")
+		// if (!propertyDoc.roadWidthType) validatonError("roadWidthType", "Please fill the roadWidthType")
 
 
 
@@ -192,8 +192,13 @@ export const after_createNewProperty = async (response, request, context) => {
 		// if(!isSubmitClickedOnEdit(request.payload)) return response;
 		console.log("NEW->AFTER PROPERTY")
 
+
 		const propertyDoc = response.record.params;
 		const currentUser = context.currentAdmin;
+
+		console.log("new property doc is : " , propertyDoc)
+
+
 
 		// ====== build floor data in plain js object format =========
 		const floorsData = buildFloorsData(propertyDoc);
@@ -422,10 +427,11 @@ export const after_newARVModificationHook = async(response , request , context)=
 
 		// ================= Step 1 : Fetching Old Tax Model ======================
 		const prevTax = await Tax.findOne({propertyId}).sort({createdAt : -1}).lean();
+		console.log("Prev tax is : " , prevTax)
 
 		// ================= Step 2 : Fetching Bakaya ======================
 		const preNagarNigamData = await NagarNigamProperty.findOne({propertyId});
-		let bakaya = preNagarNigamData.prevTax;
+		let bakaya = preNagarNigamData?.prevTax || 0;   // if the previous document is not present from nagar nigam , so on that case we assume the bakaya as 0
 
 		// ================= Step 3 : get newARV and calculate newTotalTax = (tax + bakaya) ============
 		const newARV = changedARVDoc?.newArv;

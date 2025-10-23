@@ -21,6 +21,8 @@ import UploadBulkProperties from '../admin/components/UploadBulkProperties'
 AdminJS.UserComponents.UploadBulkProperties = UploadBulkProperties
 import BulkBillDownload from '../admin/components/BulkBillDownload'
 AdminJS.UserComponents.BulkBillDownload = BulkBillDownload
+import FindPropertyIdCustDocument from '../admin/components/FindPropertyIdCustDocument'
+AdminJS.UserComponents.FindPropertyIdCustDocument = FindPropertyIdCustDocument
 import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
 AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
 import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'

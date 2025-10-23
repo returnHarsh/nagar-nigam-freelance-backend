@@ -1,3 +1,4 @@
+import { NagarNigamPrerequisite } from "../../models/NagarNigamPrerequisite.js";
 import { NagarNigamProperty } from "../../models/nagarNigamProperty.js";
 import { Property } from "../../models/property.js";
 import { Tax } from "../../models/tax.js";
@@ -105,9 +106,15 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
             console.log("NO NEW TAX FOUND!!")
 
             // ========== fetching the data we got from nagar nigam ===================
-            const preNagarNigamData = await NagarNigamProperty.findOne({ownerName : property.ownerName , fatherName : property.fatherName , houseNumber : property.houseNumber}).session(session)
+            // const preNagarNigamData = await NagarNigamProperty.findOne({ownerName : property.ownerName , fatherName : property.fatherName , houseNumber : property.houseNumber}).session(session)
+            const preNagarNigamData = await NagarNigamProperty.findOne({houseNumber : property.houseNumber}).session(session)
             console.log("NAGAR NIGAM DATA : " , preNagarNigamData);
             const bakaya = isNaN(Number(preNagarNigamData?.prevTax)) ? 0 : Number(preNagarNigamData?.prevTax)
+            const interestRate = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}))?.interateRateOnBakaya || 0;
+            console.log("Interest Rate is : " , interestRate )
+            const interestAmountOnBakaya =   ((bakaya * interestRate) / 100)
+            
+
             console.log("bakaya during tax calculation is : " , bakaya)
             if(preNagarNigamData){
                 preNagarNigamData.PTIN = property.PTIN;
@@ -120,7 +127,7 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
             const tax = new Tax({
                 propertyId: property?._id,
                 arv: totalArv,
-                totalTax : totalTax + bakaya,
+                totalTax : (totalTax + bakaya + interestAmountOnBakaya),
                 taxWithoutBakaya : totalTax,
                 bakaya : bakaya,
                 taxStatus: "pending",
@@ -131,6 +138,8 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
                 dueDate: endDate,
                 history: [],
                 prevTaxPointer: null,
+                interestAmountOnBakaya,
+                interestRate
             })
             await tax.save({session});
             await Property.findByIdAndUpdate(property?._id , {tax : tax?._id});

@@ -16,6 +16,8 @@ const TaxSchema = new mongoose.Schema({
 	history : [{ type : mongoose.Schema.Types.ObjectId , ref : 'Payment' , _id : false }],
 	prevTaxPointer : {type : mongoose.Schema.Types.ObjectId , ref : "Tax"},
 	bakaya : {type : Number},
+	interestAmountOnBakaya : {type : Number},
+	interestRate : {type : Number},
 	taxWithoutBakaya : {type : Number},
 
 } , {timestamps : true})

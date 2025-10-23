@@ -30,19 +30,23 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 
 // registering the adminjs
 app.use("/admin" , adminRouter)
-app.use("/admin-internals/bulk-generate-bill" , interalAdminRoutes)
-
-
 
 // registering the body parser middleware
-app.use(express.json())
-app.use(express.urlencoded({extended : true}))
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+app.use("/admin-internals" , interalAdminRoutes)
+
+
+
+
+
 
 
 
 // health check route 
 app.get("/" , (req,res)=>{
-	console.log("Host Header : " , req.headers.host )
+	console.log("Host Header : " , req.headers.host)
 	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })

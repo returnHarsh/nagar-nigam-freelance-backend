@@ -61,15 +61,15 @@ const surroundingSchema = new mongoose.Schema({
 const propertySchema = new mongoose.Schema({
 
   PTIN : {type : String , trim : true},
-  ward: { type: String, trim: true , required : true},
-  wardNumber : {type : String ,  required : true},
-  locality: { type: String, trim: true , required : true},
-  houseNumber: { type: String, trim: true ,  required : true},
+  ward: { type: String, trim: true , required : false},
+  wardNumber : {type : String ,  required : false},
+  locality: { type: String, trim: true , required : false},
+  houseNumber: { type: String, trim: true ,  required : false},
   isEmptyProperty: { type: Boolean, default: false },
-  districtCode : {type : String , required : true},
+  districtCode : {type : String , required : false},
 
   // Interview & ownership
-  interviewerName: { type: String, trim: true , required : true},
+  interviewerName: { type: String, trim: true , required : false},
   fatherName: { type: String, trim: true },
   relationWithOwner: {
     type: String,
@@ -77,12 +77,12 @@ const propertySchema = new mongoose.Schema({
   },
   ownerName: { type: String, trim: true },
   guardianName: { type: String, trim: true },
-  phoneNumber : {type : Number , required : true},
+  phoneNumber : {type : String , required : false},
 
   // Property info
   constructionYear: { type: Number },
-  pinCode: { type: Number , required : true },
-  address: { type: String, trim: true , required : true},
+  pinCode: { type: Number , required : false },
+  address: { type: String, trim: true , required : false},
   religion: { type: String, enum: ["Hindu", "Muslim", "Christian", "Others"] },
   gender: { type: String, enum: ["male", "female", "others"] },
   // mobile: { type: Number },
@@ -91,10 +91,10 @@ const propertySchema = new mongoose.Schema({
   sequenceNumber: { type: Number },
   email : {type : String , trim : true},
 
-  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"] , required : true},
-  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : true , required : true},
-  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true , required : true},
-  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true , required : true},
+  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"] , required : false},
+  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : false},
+  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true , required : false},
+  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true , required : false},
 
   numberOfToilets: { type: Number, default: 0 },
 
@@ -103,7 +103,7 @@ const propertySchema = new mongoose.Schema({
   utilities: { type: utilitiesSchema },
   waterConnectionNumber: { type: Number },
   surrounding: { type: surroundingSchema },
-  floorsData: { type: floorsDataSchema , required : true },
+  floorsData: { type: floorsDataSchema , required : false },
   location: {
     type: {
       lattitude: { type: String },
@@ -118,7 +118,7 @@ const propertySchema = new mongoose.Schema({
   houseFrontWithNamePlate: { type: String },
 
   isSurveyVerified: { type: Boolean , default : false},
-  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' , required : true },
+  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' , required : false },
 
   propertyGroup : {type : String , enum : ["governmentOffices" , "schoolsAndColleges" , "hospitalsAndClinics" , "parksAndRecreation" , "transportHubs" , "localShops"]},
 
@@ -155,7 +155,7 @@ propertySchema.pre('save', function(next) {
   try {
     // Only generate PPIN for new documents
     if (this.isNew && !this.PTIN) {
-      this.PTIN = `${this.districtCode}-${generateNumericId()}`;
+      this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
     }
     next();
   } catch (err) {
@@ -163,4 +163,20 @@ propertySchema.pre('save', function(next) {
     next(err);
   }
 });
+
+propertySchema.pre('insertMany', function(next, docs) {
+  try {
+    docs.forEach(doc => {
+      if (!doc.PTIN) {
+        doc.PTIN = `UP${doc.districtCode}${generateNumericId()}`;
+      }
+    });
+    next();
+  } catch (err) {
+    errorLogger(err, "pre-insertMany hook on propertySchema");
+    next(err);
+  }
+});
+
+
 export const Property = mongoose.model("Property", propertySchema);

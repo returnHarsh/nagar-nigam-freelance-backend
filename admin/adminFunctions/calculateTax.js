@@ -357,6 +357,8 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		const constructionTypeKey = getKeyByValue(constructionType, ConstructionType);
 
 		if (!roadTypeKey || !constructionTypeKey) {
+			console.log("roadtype key is : " , roadTypeKey)
+			console.log("construction type key is : " , constructionTypeKey)
 			throw new Error(`Invalid roadType or constructionType. Road: ${roadType}, Construction: ${constructionType}`)
 		}
 

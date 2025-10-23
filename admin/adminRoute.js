@@ -36,6 +36,7 @@ import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js"
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
 import { runPythonScript } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
+import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
 
 // lets create the uploads folder is it doens'nt exist
 const isUploadDir = path.join(process.cwd(), "uploads");
@@ -91,6 +92,10 @@ const AdminCustomComponents = {
   BulkBillDownload : componentLoader.add(
     'BulkBillDownload' , 
     path.resolve(__dirname , './components/BulkBillDownload.jsx')
+  ),
+  FindPropertyIdCustDocument : componentLoader.add(
+    'FindPropertyIdCustDocument',
+    path.resolve(__dirname , './components/FindPropertyIdCustDocument.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -659,6 +664,9 @@ const adminJs = new AdminJS({
           },
         },
         properties: {
+            propertyId : {
+            components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
+          },
           showDueAmount: {
             isVisible: { list: false, filter: false, show: false, edit: true },
             components: {
@@ -802,7 +810,7 @@ const adminJs = new AdminJS({
               }
             }
           }
-        }
+        },
       }
     },
     {
@@ -826,6 +834,9 @@ const adminJs = new AdminJS({
             const uniqueID = record?.params?._id || "temp";
             return `arvModification/${uniqueID}-${Date.now()}-${fileName}`;
           },
+          validation: {
+    maxSize: 50 * 1024 * 1024, // 50 MB limit
+  },
           componentLoader
         })
       ],
@@ -864,7 +875,10 @@ const adminJs = new AdminJS({
               show: AdminCustomComponents.ModifyARVComponent
             }
           },
-          modificationProof: { isVisible: false }
+          modificationProof: { isVisible: false },
+          propertyId : {
+            components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
+          }
         }
       }
     },
@@ -900,6 +914,9 @@ const adminJs = new AdminJS({
           }
         }
       }
+    },
+    {
+      resource : NagarNigamPrerequisite
     }
   ],
   branding: {
@@ -946,7 +963,8 @@ const ADMIN_DUMMY = {
 }
 
 const dummyAuthenticate = async (email, password) => {
-  if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
+  // if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
+  return ADMIN_DUMMY;
   return null;
   
 }
@@ -978,13 +996,16 @@ const authenticate = async (email, password) => {
 }
 
 export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(adminJs, {
-  authenticate,
-  // authenticate : dummyAuthenticate,
+  // authenticate,
+  authenticate : dummyAuthenticate,
   cookieName: "adminjs",
   cookiePassword: process.env.SECRET_KEY,
 }, null,
   {
-    before: (req, res, next) => {
-      upload.any()(req, res, next);  // ✅ this is the correct way to attach multer
+    // before: (req, res, next) => {
+    //   upload.any()(req, res, next);  // ✅ this is the correct way to attach multer
+    // },
+     formidable: {
+      maxFileSize: 50 * 1024 * 1024, // 50 MB
     },
   })

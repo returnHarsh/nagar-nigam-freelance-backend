@@ -4,6 +4,7 @@ import { calculateTax } from "../adminFunctions/calculateTax.js";
 import { Property } from "../../models/property.js";
 import { createTaxModel } from "../adminFunctions/taxRegister.js";
 import { generateReciept } from "../adminFunctions/generateReciept.js";
+import {mapClassifiedProperty} from "../adminFunctions/helper.js"
 import {spawn} from "child_process"
 import { fileURLToPath } from "url";
 import path from "path";
@@ -11,34 +12,40 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const processEachProperty = async(property)=>{
 	try{
-
+    console.log("running for property with Id : " , property)
 		const {floorsData , roadWidthType , constructionType , propertyType} = property;
 
-		if(!roadWidthType || roadWidthType || constructionType){
+		if(!roadWidthType || !roadWidthType || !constructionType){
 			return {success : false , message : "Missing Fields"};
 		}
 
 		// ======= STEP 1 : Calculate Tax =======
-		const taxDetails = await calculateTax(floorsData , propertyType , constructionType , propertyType );
+		const taxDetails = await calculateTax(floorsData , roadWidthType , constructionType , propertyType );
+    console.log("tax details is : " , taxDetails)
 
 		// ======= STEP 2 : Creating Tax Model For this calculated Tax =========
 		const latestTax = await createTaxModel(taxDetails , property)
+    console.log("latest tax is : " , latestTax)
 
 
 		// ======= Step 3 : Generating the Reciept PDF and Storing that on S3 =======
 		try{
 			await generateReciept(property , latestTax)
+      console.log("reciept generated")
 		}catch(err){
 			errorLogger(err , "");
 		}
 
 		// ======= Step 4 : Categorizing and attaching the proprtyGroup =======
 		property.propertyGroup = mapClassifiedProperty(property.propertyType)
-		await Property.findByIdAndUpdate(property._id, { propertyGroup: property.propertyGroup });
+		await Property.findByIdAndUpdate(property._id, { propertyGroup: property.propertyGroup , isProcessed : true});
+
+    console.log("Done processing the property")
 
 		return {success : true , message : "Property Inserted"}
 
 	}catch(err){
+    console.log("error is : " , err.message)
 		errorLogger(err.message , "processEachProperty")
 	}
 }
@@ -49,9 +56,20 @@ export const uploadBulkData = async()=>{
 
 		const properties = await Property.find({processed : false}).lean();
 
-		await Promise.all(properties.map(async(property)=>{
-			await processEachProperty(property)
-		}))
+		// await Promise.all(properties.map(async(property)=>{
+		// 	await processEachProperty(property)
+    //   return "done"
+		// }))
+
+    
+
+    for(const property of properties){
+      await processEachProperty(property)
+    }
+    
+    console.log("✅ Done Processing the Whole Property Record")
+
+
 
 
 	}catch(err){
@@ -66,7 +84,8 @@ export function runPythonScript(scriptPath, excelFilePath) {
 	console.log("🐍 Starting the Python Script")
 
 	const venvPythonPath = path.resolve("scripts/.venv/bin/python")
-    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'nagar_niam_latest']);
+    // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'barnal']);
+    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'karhal']);
     
     let stdout = '';
     let stderr = '';
@@ -99,6 +118,11 @@ export function runPythonScript(scriptPath, excelFilePath) {
       if (code !== 0) {
         reject(new Error(`Script failed: ${stderr}`));
       } else {
+
+
+        // calling the function to calculate and print the tax
+        uploadBulkData()
+
         resolve({
           message: `Imported ${stats.insertedCount} properties (${stats.duplicatesSkipped} duplicates)`,
           ...stats

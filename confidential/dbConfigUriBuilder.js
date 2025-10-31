@@ -43,4 +43,5 @@ class DB_CONFIG {
 
 }
 
-export default DB_CONFIG;
+
+export const dbConfigGlob = new DB_CONFIG();

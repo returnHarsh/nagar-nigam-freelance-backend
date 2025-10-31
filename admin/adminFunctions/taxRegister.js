@@ -92,6 +92,8 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
                 history : prevTax?.history,
                 prevTaxPointer : prevTax?._id,
                 taxWithoutBakaya : prevTax?.taxWithoutBakaya,
+                interestAmountOnBakaya : prevTax?.interestAmountOnBakaya,
+                interestRate : prevTax?.interestRate
             })
             console.log("NEW TAX SAVED IS : " , tax)
 
@@ -110,7 +112,7 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
             const preNagarNigamData = await NagarNigamProperty.findOne({houseNumber : property.houseNumber}).session(session)
             console.log("NAGAR NIGAM DATA : " , preNagarNigamData);
             const bakaya = isNaN(Number(preNagarNigamData?.prevTax)) ? 0 : Number(preNagarNigamData?.prevTax)
-            const interestRate = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}))?.interateRateOnBakaya || 0;
+            const interestRate = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}))?.interestRateOnBakaya || 0;
             console.log("Interest Rate is : " , interestRate )
             const interestAmountOnBakaya =   ((bakaya * interestRate) / 100)
             

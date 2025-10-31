@@ -238,7 +238,6 @@ export const after_createNewProperty = async (response, request, context) => {
 		}
 
 
-
 		// =========== If all the operations executed without any error , then we are good to go for final updation =================
 		// await session.commitTransaction();
 		// session.endSession();
@@ -253,8 +252,15 @@ export const after_createNewProperty = async (response, request, context) => {
 		// }
 
 		// ========= since the transaction failed , deleting the property ==================
-		console.log("deleting the Property with id : ", response?.record?.params?._id)
-		await Property.findByIdAndDelete(response?.record?.params?._id);
+		// console.log("deleting the Property with id : ", response?.record?.params?._id)
+		// await Property.findByIdAndDelete(response?.record?.params?._id);
+
+		console.log(`property with id : ${response?.record?.params?._id} failed while saving ` )
+		await Property.findByIdAndUpdate(response?.record?.params?._id , {
+			$set : {
+				isSuccessSubmit : false
+			}
+		})
 
 		errorLogger(err, "after createNewProperty")
 	}

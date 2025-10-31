@@ -65,6 +65,7 @@ const propertySchema = new mongoose.Schema({
   wardNumber : {type : String ,  required : false},
   locality: { type: String, trim: true , required : false},
   houseNumber: { type: String, trim: true ,  required : false},
+  newHouseNumber : {type : String , trim : true},
   isEmptyProperty: { type: Boolean, default: false },
   districtCode : {type : String , required : false},
 
@@ -80,6 +81,7 @@ const propertySchema = new mongoose.Schema({
   phoneNumber : {type : String , required : false},
 
   // Property info
+  demandNumber : {type : Number},
   constructionYear: { type: Number },
   pinCode: { type: Number , required : false },
   address: { type: String, trim: true , required : false},
@@ -133,7 +135,10 @@ const propertySchema = new mongoose.Schema({
   latestBillUrl : {type : String},
   lastBillGeneratedAt : {type : Date},
 
-  tax : {type : mongoose.Schema.Types.ObjectId , ref : 'Tax'}
+  tax : {type : mongoose.Schema.Types.ObjectId , ref : 'Tax'},
+
+  // field to detect if there occur any error while saving this property
+  isSuccessSubmit : {type : Boolean , default : true},
 
 }, { timestamps: true, strict: false });
 
@@ -151,11 +156,15 @@ propertySchema.set("toObject", { virtuals: true });
 // to generate unique number
 const generateNumericId = customAlphabet('0123456789', 6);
 
-propertySchema.pre('save', function(next) {
+propertySchema.pre('save', async function(next) {
   try {
     // Only generate PPIN for new documents
     if (this.isNew && !this.PTIN) {
       this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
+    }
+    if(this.isNew && !this.demandNumber){
+      const count = await mongoose.model('Property').countDocuments();
+      this.demandNumber = count+1;
     }
     next();
   } catch (err) {

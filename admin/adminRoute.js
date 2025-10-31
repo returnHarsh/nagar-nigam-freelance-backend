@@ -174,7 +174,7 @@ const adminJs = new AdminJS({
           },
           generateTaxBillPDF: {
             actionType: 'record',
-            icon: 'Print',
+            icon: 'Printer',
             label: 'Print Reciept',
             component: AdminCustomComponents.GenerateTaxBillComp,
             handler: async (request, response, context) => {
@@ -293,6 +293,15 @@ const adminJs = new AdminJS({
           ward: {
             components: { edit: AdminCustomComponents.PropertyWardSelector }
           },
+          isSuccessSubmit : {
+              isVisible: {
+              list: true,
+              filter: true,
+              show: true,
+              edit: false,
+              new: false
+            }
+          },
           // // field that the surveyor cannot change
           // fatherName: { isDisabled: true },
           // ownerName: { isDisabled: true },
@@ -319,6 +328,9 @@ const adminJs = new AdminJS({
           displayId: { isTitle: true },
           editProof: {
             isVisible: { edit: true, new: false }
+          },
+          demandNumber: {
+            isVisible: { edit: false, list : true , show : true }
           },
           PTIN: { isVisible: { list: false, edit: false, filter: false, show: true } },
           floorsData: { type: "mixed", components: { edit: AdminCustomComponents.FloorEditComponent } },
@@ -887,6 +899,13 @@ const adminJs = new AdminJS({
       options: {
         navigation: 'Admin Only',
         actions: {
+           actions: {
+          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          edit: { isAccessible: false },
+          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+        },
           getWardDetails: {
             actionType: 'record',
             handler: async (request, response, context) => {
@@ -916,7 +935,17 @@ const adminJs = new AdminJS({
       }
     },
     {
-      resource : NagarNigamPrerequisite
+      resource : NagarNigamPrerequisite,
+      options : {
+        navigation : "Admin Only",
+        actions: {
+          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          edit: { isAccessible: false },
+          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+        },
+      }
     }
   ],
   branding: {
@@ -996,8 +1025,8 @@ const authenticate = async (email, password) => {
 }
 
 export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(adminJs, {
-  // authenticate,
-  authenticate : dummyAuthenticate,
+  authenticate,
+  // authenticate : dummyAuthenticate,
   cookieName: "adminjs",
   cookiePassword: process.env.SECRET_KEY,
 }, null,

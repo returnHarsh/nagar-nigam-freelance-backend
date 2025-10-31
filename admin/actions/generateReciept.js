@@ -2,10 +2,18 @@
 import puppeteer from 'puppeteer';
 import fs from "fs"
 import { NagarNigamProperty } from '../../models/nagarNigamProperty.js';
+import { NagarNigamPrerequisite } from '../../models/NagarNigamPrerequisite.js';
 
 export const generateTaxBillPDF = async (property, tax) => {
+
+  // extracting the form number for this Nagar Nigam
+  const nagarNigamPrerequisite = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}));
+  const formNumber = nagarNigamPrerequisite?.formNumber;
+  const nagarNigamName = nagarNigamPrerequisite?.nagarNigamName
+
+
   // Extract data from models
-  const formNo = property.PTIN || property._id.toString().slice(-6);
+  // const formNo = property.PTIN || property._id.toString().slice(-6);
   const demandNumber = property?.demandNumber;
   
   // ============= Calculate tax values from taxBreakdown ================
@@ -584,7 +592,7 @@ const htmlTemplate = `
     <div class="header">
       <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/up-logo.jpg" class="header-logo" alt="UP Logo" />
       <div class="header-center">
-        <div class="header-title">नगर पंचायत करहल, मैनपुरी</div>
+        <div class="header-title">नगर पंचायत ${nagarNigamName} , मैनपुरी</div>
         <div class="header-subtitle">बिल गृहकर एवं जलकर</div>
       </div>
       <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/swadesh-logo.jpg" class="swachh-logo" alt="Swachh Bharat" />
@@ -597,7 +605,7 @@ const htmlTemplate = `
         <div class="info-left">
           <div class="info-row">
             <span class="info-label">फॉर्म नंबर:</span>
-            <span>${formNo}</span>
+            <span>${formNumber}</span>
           </div>
           <div class="info-row">
             <span class="info-label">PTIN:</span>
@@ -614,12 +622,12 @@ const htmlTemplate = `
         </div>
         <div class="info-right">
           <div class="info-row">
-            <span class="info-label">बिल नंबर:</span>
-            <span></span>
+            <span class="info-label">डिमांड नंबर:</span>
+            <span> ${demandNumber} </span>
           </div>
           <div class="info-row">
-            <span class="info-label">Ward:</span>
-            <span>${property.ward || 'N/A'}</span>
+            <span class="info-label">Ward</span>
+            <span> ${property.wardNumber}</span>
           </div>
           <div class="info-row">
             <span class="info-label">मोहल्ला:</span>
@@ -628,6 +636,10 @@ const htmlTemplate = `
           <div class="info-row">
             <span class="info-label">भवन संख्या:</span>
             <span>${property.houseNumber || 'N/A'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">नई भवन संख्या:</span>
+            <span>${property.newHouseNumber || 'N/A'}</span>
           </div>
           <!-- <div class="info-row">
             <span class="info-label"></span>
@@ -658,9 +670,12 @@ const htmlTemplate = `
             <td>${waterTax}</td>
             <td rowspan="8" class="remarks-cell">
               <ol>
-                <li><strong>1.यह स्वामित्व का प्रमाण नहीं है। यह एक प्रोविजनल बिल है</strong></li>
-                <li><strong>2. यह बिल कंप्यूटर द्वारा निर्गत किया गया है हस्ताक्षर की आवश्यकता नहीं है</strong></li>
-                <li><strong>3. निनीय वर्ष की संपत्ति के उपरांत बकाये पर 12% का अधिभार देय होगा</strong></li>
+                <li><strong> यह स्वामित्व का प्रमाण नहीं है यह एक प्रोविजनल बिल है</strong></li>
+                <li><strong> वर्तमान मांग पर छूट नियमानुसार अनुमन्य होगी । कृपया बिल की प्रतीक्षा न करें।</strong></li>
+                <li><strong> वित्तीय वर्ष की संपत्ति के उपरांत बकाये पर 12% का अधिभार देय होगा</strong></li>
+                <li><strong> रूपया नगर पालिका के कर विभाग में 10.30 बजे से 2 बजे तक जमा किया जा सकता है।</strong></li>
+                <li><strong> इस अवधि के बाद धारा 168 व 169 के अन्तर्गत डिमांड नोटिस व वारण्ट कुर्की भी जारी किया जायेगा।</strong></li>
+                <li><strong> यह बिल कंप्यूटर द्वारा निर्मित किया गया है हस्ताक्षर की आवश्यकता नहीं है।</strong></li>
               </ol>
             </td>
             <td rowspan="2">
@@ -702,7 +717,8 @@ const htmlTemplate = `
 
       <!-- Footer Notes -->
       <div class="footer-notes">
-        <p><strong>1.</strong> यदि संपत्ति के स्वामी/अध्यासी करदाता को इस बिल के संबंध में किसी प्रकार की कोई आपत्ति है तो प्रोविजनल बिल प्राप्ति दिनांक से 15 दिवस के अंदर नगर पंचायत करहल, मैनपुरी के कर विभाग में लिखित रूप से दर्ज करा सकते है अन्यथा इस बिल को अंतिम मानकर वसूली की जाएगी</p>
+        <p><strong>1.</strong> यदि संपत्ति के स्वामी/अध्यासी करदाता को इस बिल के संबंध में किसी प्रकार की कोई आपत्ति है तो प्रोविजनल बिल प्राप्ति दिनांक से 15 दिवस के अंदर नगर पंचायत ${nagarNigamName}, मैनपुरी के कर विभाग में लिखित रूप से दर्ज करा सकते है अन्यथा इस बिल को अंतिम मानकर वसूली की जाएगी</p>
+        <p><strong>2.</strong> नगर पंचायत की आधिकारिक वेबसाइट <a href="https://barnal.npup.in/">www.barnal.npup.in</a> पर गृहकर, जलकर व जलमूल्य का भुगतान ऑनलाइन कर सकते हैं।</p>
       </div>
 
       <!-- Signatures -->

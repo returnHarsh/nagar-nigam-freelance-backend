@@ -10,6 +10,7 @@ import { errorLogger, errorMiddleware } from "./utils/errorLogger.js";
 import {adminRouter} from "./admin/adminRoute.js"
 import {sessionMiddleware} from "./middlewares/sessionMiddleware.js"
 import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
+// import { gateKeeper } from "./middlewares/gateKeeper.js";
 
 
 // importing routes
@@ -19,6 +20,8 @@ import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
 
 const PORT = process.env.PORT || 8000;
 const app = express();
+// =============== Global Middleware to decide which DB to connect ====================
+// app.use(gateKeeper)
 
 // configuring the cors middleware , allowing my registered frontend to talk to this backend
 app.use(cors({
@@ -38,13 +41,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/admin-internals" , interalAdminRoutes)
 
 
-
-
-
-
-
-
-// health check route 
+// health check and default route 
 app.get("/" , (req,res)=>{
 	console.log("Host Header : " , req.headers.host)
 	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);

@@ -160,9 +160,16 @@ const api = new ApiClient();
 
 const HouseNumberInput = ({ property, record, onChange }) => {
   const [inputValue, setInputValue] = useState(record?.params?.[property.path || property.name] || '');
-  const[ward] = useState(record?.params?.ward)
+  const[ward , setWard] = useState(record?.params?.ward)
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  useEffect(()=>{
+    setWard(record?.params?.ward)
+  },[record?.params?.ward])
+
+
+  
 
   useEffect(() => {
     const currentValue = record?.params?.[property.path || property.name];
@@ -172,10 +179,15 @@ const HouseNumberInput = ({ property, record, onChange }) => {
   }, [record?.params, property.path, property.name]);
 
   const fetchHouseData = async (houseNumber) => {
-    if (!houseNumber || houseNumber.trim() === '' || !ward) {
+    if(!ward){
+      setMessage({ text: 'Please Enter Ward to search the House Number', type: 'error' });
+      return;
+    }
+    if (!houseNumber || houseNumber.trim() === '') {
       // setMessage({ text: 'Please enter a house number and ward', type: 'error' });
-      setMessage({ text: 'No records available for this house number or ward', type: 'error' });
-      onChange('houseNumber' , houseNumber)
+      // setMessage({ text: 'No records available for this house number or ward , setting the houseNumber to New', type: 'error' });
+      setMessage({ text: 'Please Enter a House Number', type: 'error' });
+      // onChange('houseNumber' , "New")
       return;
     }
 
@@ -231,6 +243,7 @@ const HouseNumberInput = ({ property, record, onChange }) => {
           text: `No data found for house number: ${houseNumber}`, 
           type: 'error' 
         });
+        onChange('houseNumber' , "New")
         return;
       }
 

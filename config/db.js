@@ -15,7 +15,7 @@ export const connectDB = async () => {
 
     // Attach events first
     mongoose.connection.on("connected", () => {
-      console.log("[INFO] ✅ MongoDB connected successfully");
+      console.log("[INFO] ✅ MongoDB connected successfully on URI : " , uri);
     });
 
     mongoose.connection.on("error", (err) => {

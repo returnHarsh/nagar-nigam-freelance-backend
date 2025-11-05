@@ -40,7 +40,7 @@ const processEachProperty = async(property)=>{
 		property.propertyGroup = mapClassifiedProperty(property.propertyType)
 		await Property.findByIdAndUpdate(property._id, { propertyGroup: property.propertyGroup , isProcessed : true});
 
-    console.log("Done processing the property")
+    console.log("🎉 🎉 Done processing the property")
 
 		return {success : true , message : "Property Inserted"}
 
@@ -75,6 +75,21 @@ export const uploadBulkData = async()=>{
 	}catch(err){
 		errorLogger(err,"uploadBulkData");
 	}
+}
+
+
+// ================= This function is to process the individual property data ======================
+export const processSingleProperty = async(PTIN)=>{
+  try{
+    const property = await Property.findOne({PTIN : PTIN});
+    if(!property) return;
+
+    await processEachProperty(property)
+
+  }catch(err){
+    console.log("error in processSingleProperty function : " , err.message);
+    errorLogger(err , "processSingleProperty")
+  }
 }
 
 // ================ This is the python script handler function which runs and pass the parameters inside the python script =================
@@ -129,6 +144,24 @@ export function runPythonScript(scriptPath, excelFilePath) {
         });
       }
     });
+
+//   python.on('close', async (code) => {
+//   console.log("Script closed");
+
+//   if (code !== 0) {
+//     reject(new Error(`Script failed: ${stderr}`));
+//   } else {
+//     try {
+//       await uploadBulkData(); // ✅ now you can await it safely
+//       resolve({
+//         message: `Imported ${stats.insertedCount} properties (${stats.duplicatesSkipped} duplicates)`,
+//         ...stats,
+//       });
+//     } catch (err) {
+//       reject(err);
+//     }
+//   }
+// });
 
     python.on('error', (error) => {
       reject(new Error(`Python error: ${error.message}`));

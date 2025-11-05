@@ -34,9 +34,10 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { runPythonScript } from "./actions/bulkUploadProcessedData.js";
+import { processSingleProperty, runPythonScript } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
+import { sessionMiddleware } from "../middlewares/sessionMiddleware.js";
 
 // lets create the uploads folder is it doens'nt exist
 const isUploadDir = path.join(process.cwd(), "uploads");
@@ -261,6 +262,48 @@ const adminJs = new AdminJS({
               }
             },
             component: AdminCustomComponents.UploadBulkProperties
+          },
+          
+          processPropertyAgain: {
+            actionType: 'record',
+            label: "Process this Property",
+            component: false,
+            handler: async (request, response, context) => {
+              try {
+                const { record } = context;
+                const { PTIN } = record?.params || {};
+
+                if (!PTIN) {
+                  return {
+                    record: record.toJSON(),
+                    notice: {
+                      message: "PTIN not found for this record",
+                      type: "error",
+                    },
+                  };
+                }
+
+                // await processSingleProperty(PTIN);
+                await processSingleProperty(PTIN);
+
+                return {
+                  record: record.toJSON(),
+                  notice: {
+                    message: `Property with PTIN ${PTIN} processed successfully ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in processPropertyAgain:", err);
+                return {
+                  record: context?.record?.toJSON?.(),
+                  notice: {
+                    message: "Something went wrong while processing the property.",
+                    type: "error",
+                  },
+                };
+              }
+            },
           },
 
           bulkDownload : {
@@ -980,19 +1023,22 @@ const adminJs = new AdminJS({
   },
   componentLoader,
   dashboard: null,
-  rootPath: "/admin"
+  rootPath: "/karhal/admin",
+  loginPath: "/karhal/admin/login",     // 👈 important
+  logoutPath: "/karhal/admin/logout",   // 👈 important
 })
 
 adminJs.watch();
 
 const ADMIN_DUMMY = {
-  email: "admin@gmail.com",
-  password: "admin@12345",
+  email: "admin",
+  password: "123",
   role: "super-admin"
 }
 
 const dummyAuthenticate = async (email, password) => {
   // if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
+  console.log("inside the dummy authenticate function")
   return ADMIN_DUMMY;
   return null;
   
@@ -1024,17 +1070,16 @@ const authenticate = async (email, password) => {
 
 }
 
-export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(adminJs, {
-  authenticate,
-  // authenticate : dummyAuthenticate,
-  cookieName: "adminjs",
-  cookiePassword: process.env.SECRET_KEY,
-}, null,
+export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+  adminJs,
   {
-    // before: (req, res, next) => {
-    //   upload.any()(req, res, next);  // ✅ this is the correct way to attach multer
-    // },
-     formidable: {
-      maxFileSize: 50 * 1024 * 1024, // 50 MB
+      authenticate: authenticate,
+      cookieName: "karhal-adminjs",
+      cookiePassword: "karhal-12345",
     },
-  })
+    null,
+    {
+      resave: false,
+      saveUninitialized: true,
+    }
+);

@@ -373,7 +373,13 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		const { carpetRate, emptyRate } = await calculateRate(roadTypeKey, constructionTypeKey);
 
 		// Step 3: Get commercial multiplier
-		const commercialMultiplier = getCommercialMultiplier(propertyType);
+		// let commercialMultiplier = getCommercialMultiplier(propertyType)
+		// if (commercialMultiplier < 3 && areas.totalCarpetR > 120) {
+		// 	commercialMultiplier = 3;
+		// }
+
+		// =============== now for karhal the commercialMultiplier should be hardcoded to 3 ===================
+		const commercialMultiplier = 3;
 
 		// Step 4: Calculate ARV
 		const arvBreakdown = calculateARV(areas, carpetRate, emptyRate, commercialMultiplier);

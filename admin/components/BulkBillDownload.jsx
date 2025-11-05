@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Box, Button, MessageBox, Loader, Icon } from '@adminjs/design-system';
+import { Box, Button, MessageBox, Loader, Icon, Link } from '@adminjs/design-system';
 import { ApiClient } from 'adminjs';
 
 const BulkBillDownload = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('success');
+  const [mergedPdfUrl , setMergedPdfUrl] = useState('')
+  const [isPdfReady , setIsPdfReady] = useState(false);
 
   const api = new ApiClient();
 
@@ -26,8 +28,12 @@ const BulkBillDownload = () => {
         setMessage(response.data.message);
         setMessageType('success');
 
+        setMergedPdfUrl(response.data.downloadUrl)
+        setIsPdfReady(true);
+
         // Open S3 URL in new tab to trigger download
         window.open(response.data.downloadUrl, '_blank');
+        
         
         // Alternative method: Force download without opening new tab
         // Uncomment if you prefer this approach:
@@ -58,6 +64,12 @@ const BulkBillDownload = () => {
         <h2>Download All Property Bills</h2>
         <p>This will merge all property bills into a single PDF file and save it to S3.</p>
       </Box>
+
+
+
+      {isPdfReady && <Link>
+      {mergedPdfUrl}
+      </Link>}
 
       <Button
         onClick={handleDownload}

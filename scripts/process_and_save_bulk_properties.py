@@ -39,7 +39,7 @@ COLLECTION_NAME = "properties"
 # ============= COLUMN MAPPING =============
 REQUIRED_COLUMNS = {
     "WARD NUMBER": "wardNumber",
-    "WARD": "ward",
+    "WARD NAME": "ward",
     "HOUSE_NUMBER": "houseNumber",
     "Phone number": "phoneNumber",
     "FATHER NAME": "fatherName",
@@ -69,6 +69,8 @@ class PropertyDataProcessor:
         self.collection = None
         self.wardMapping = {}
         self.processed_data: List[Dict[str, Any]] = []
+        self.propertyWardDetails = [],
+        self.demandNumber = 0
         
     def is_duplicate(self, row):
         """Check if a property with the same ward name and house number exists"""
@@ -96,6 +98,10 @@ class PropertyDataProcessor:
             self.client.server_info()
             self.db = self.client[self.db_name]
             self.collection = self.db[COLLECTION_NAME]
+
+
+            # ========== Fetching the count of property ==============
+            self.demandNumber = self.collection.count_documents({})
             
             # Create indexes for better query performance
             # try:
@@ -183,22 +189,25 @@ class PropertyDataProcessor:
         # if self.is_duplicate(row):
         #     return None
 
-        print("======= ROW IS : ========= " , row)
-
+        # print("======= ROW IS : ========= " , row)
+        
+        # Updating the demandNumber
+        self.demandNumber = self.demandNumber + 1
 
         """Process a single row and convert to schema format"""
         try:
             processed_row = {
-                "PTIN" : f"UP{self.safe_get_value(row , "DISTIRCT CODE" , "UP")}{generate_numeric_id()}",
-                "ward": str(self.safe_get_value(row, "WARD", "")),
+                "PTIN" : f"UP{self.safe_get_value(row, 'DISTIRCT CODE', '17')}{generate_numeric_id()}",
+                "ward": str(self.safe_get_value(row, "WARD NAME", "")),
                 "wardNumber": str(self.safe_get_value(row, "WARD NUMBER", "")),
                 "houseNumber": str(self.safe_get_value(row, "HOUSE_NUMBER", "")),
+                "newHouseNumber" : str(self.safe_get_value(row , "PROPERTY SEQUENCE NUMBER" , "")),
                 "phoneNumber": str(self.safe_get_value(row, "Phone number", "")),
                 "fatherName": str(self.safe_get_value(row, "FATHER NAME", "")),
                 "roadWidthType": str(self.safe_get_value(row, "RODE WITH TAPE- NAME", "")),
                 "constructionType": str(self.safe_get_value(row, "CONSTRUCTION TYPE NAME", "")),
                 "propertyType": str(self.safe_get_value(row, "PROPERTY TYPE NAME", "")),
-                "propertyCategory": str(self.safe_get_value(row, "PROPERTY CATEGORY", "")),
+                "propertyClass": str(self.safe_get_value(row, "PROPERTY CATEGORY", "")),
                 "floorsData": {
                     "numberOfFloors": int(self.safe_get_value(row, "NUMBER OF FLOOR", 0)),
                     "floors": self.process_floors(row)
@@ -208,7 +217,9 @@ class PropertyDataProcessor:
                 "importedAt": datetime.utcnow(),
                 "source": os.path.basename(self.file_path),
                 "isProcessed" : False,
-                "ownerName" : str(self.safe_get_value(row , "FULL NAME" , ""))
+                "ownerName" : str(self.safe_get_value(row , "FULL NAME" , "")),
+                "locality": str(self.propertyWardDetails.get(str(self.safe_get_value(row, "WARD NAME", "")), {}).get("locality" , [""])[0]),
+                "demandNumber" : str(self.demandNumber)
             }
 
             return processed_row
@@ -235,7 +246,8 @@ class PropertyDataProcessor:
                 if processed_row:
                     self.processed_data.append(processed_row)
                 else:
-                    logger.warning(f"⚠️ Skipped row {idx + 1}")
+                    logger.warning(f"⚠️ Skipped row {idx + 1} , row is : {row}")
+                    logger.warning(f"⚠️ Skipped row {idx + 1} , and processed_row is : =============== \n " , processed_row)
 
                 # Progress logging for large files
                 if (idx + 1) % 100 == 0:
@@ -302,6 +314,13 @@ class PropertyDataProcessor:
             self.client.close()
             logger.info("🔒 MongoDB connection closed")
 
+
+    def fetchPropertyWardDetails(self):
+        propertyWardDetailsCollection = self.db["propertywarddetails"]
+        propertyWardDetails = list(propertyWardDetailsCollection.find())
+        self.propertyWardDetails = { wardDetail.get("ward", ""): wardDetail for wardDetail in propertyWardDetails }
+        return propertyWardDetails
+
     def run(self):
         """Main execution flow"""
         try:
@@ -316,6 +335,9 @@ class PropertyDataProcessor:
             # Step 2: Connect to MongoDB
             if not self.connect_to_mongodb():
                 return False
+
+
+            self.fetchPropertyWardDetails()
 
             # Step 3: Process Excel data
             if not self.process_excel_file():

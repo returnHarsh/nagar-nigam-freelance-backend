@@ -45,32 +45,34 @@ export const bulkUploadNagarNigamData = async (request, response, context) => {
       //     (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0) +
       //     (parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0) + 
       //     (parseFloat(row['prevTax'] ?? 0 ) || 0)
-          
+
       // }));
 
-       const records = jsonData.map(row => {
+      const records = jsonData.map(row => {
 
-        console.log("row is : " , row)
+        console.log("row is : ", row)
 
         return {
-          ward: [sheet],
-        houseNumber: String(row['House Number'] || row['houseNumber'] || row['house_number'] || '').trim(),
-        ownerName: String(row['Owner Name'] || row['ownerName'] || row['Name'] || row['name'] || '').trim(),
-        fatherName: String(row["Father's Name"] || row['fatherName'] || row['father_name'] || '').trim(),
-        prevHouseTax: parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0,
-        prevWaterTax: parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0,
-        prevTax:
-          (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0) +
-          (parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0) + 
-          (parseFloat(row['prevTax'] ?? 0 ) || 0)
+          ward: sheet,
+          houseNumber: String(row['House Number'] || row['houseNumber'] || row['house_number'] || '').trim(),
+          ownerName: String(row['Owner Name'] || row['ownerName'] || row['Name'] || row['name'] || '').trim(),
+          fatherName: String(row["Father's Name"] || row['fatherName'] || row['father_name'] || '').trim(),
+          prevHouseTax: parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0,
+          prevWaterTax: parseFloat(row['prevWaterTax'] ?? row["prev water tax"] ?? row['prevWaterTax'] ?? 0) || 0,
+          prevTax: parseFloat(row['prevTax'] ?? row['prev tax']) ||
+            (
+              (parseFloat(row['prevHouseTax'] ?? row['prev house tax'] ?? row['prev houseTax'] ?? 0) || 0) +
+              (parseFloat(row['prevWaterTax'] ?? row['prev water tax'] ?? row['prevWaterTax'] ?? 0) || 0)
+            )
         }
-          
+
       });
 
-      const validRecords = records.filter(record =>
-        {
-          // console.log("record is : " , record)
-        return record.houseNumber && record.ownerName && record.fatherName}
+      const validRecords = records.filter(record => {
+        // console.log("record is : " , record)
+        // return record.houseNumber && record.ownerName && record.fatherName
+        return record.houseNumber
+      }
       );
 
       if (validRecords.length === 0) {

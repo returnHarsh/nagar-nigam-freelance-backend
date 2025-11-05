@@ -171,8 +171,37 @@ const reserverTheObject = (object)=>{
 }
 
 
+
+const cleanString = (str = "") => 
+  str
+    .toString()
+    .normalize()             // fixes accented / decomposed characters
+    .replace(/\u00A0/g, ' ') // replaces non-breaking space with normal space
+    .replace(/\s+/g, ' ')    // collapses multiple spaces
+    .trim(); 
+
+
 const getKeyByValue = (value , obj)=>{
-	const block = Object.entries(obj).find((el)=> el[1] === value)
+  console.log("********* start value is : " , value)
+	const block = Object.entries(obj).find((el)=> {
+    console.log("********* el is : " , el);
+    console.log("compared value is : " , value);
+
+    console.log("\n");
+    
+    // console.log("earch char in value : " , [...value].forEach(v=> console.log(v)))
+    // console.log("earch char in el's value : " , [...el[1]].forEach(v=> console.log(v)))
+
+    console.log([...value].map(ch => ch.charCodeAt(0)));
+    console.log([...el[1]].map(ch => ch.charCodeAt(0)));
+
+    console.log("clean string of value : " , cleanString(value));
+    console.log("clean string of el[1] : " , cleanString(el[1]));
+
+
+  return  cleanString(el[1]) === cleanString(value)
+  })
+  console.log("block is : " , block)
 	return block ? block[0] : null
 }
 

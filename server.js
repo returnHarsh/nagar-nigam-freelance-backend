@@ -20,8 +20,9 @@ import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
 
 const PORT = process.env.PORT || 8000;
 const app = express();
-// =============== Global Middleware to decide which DB to connect ====================
-// app.use(gateKeeper)
+
+// ============== Main Karhal Router ======================
+const KarhalRouter = express.Router();
 
 // configuring the cors middleware , allowing my registered frontend to talk to this backend
 app.use(cors({
@@ -31,29 +32,43 @@ app.use(cors({
 
 app.use(sessionMiddleware(process.env.MONGO_URI));
 
-// registering the adminjs
-app.use("/admin" , adminRouter)
+// =============== Body parser middleware ================
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
-// registering the body parser middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// ================= Main AdminJs Route ===================
+KarhalRouter.use("/admin" , adminRouter)
 
-app.use("/admin-internals" , interalAdminRoutes)
+// =============== Body parser middleware ================
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 
-// health check and default route 
-app.get("/" , (req,res)=>{
+// ============ Route to handle adminjs internal functions ================
+KarhalRouter.use("/admin-internals" , interalAdminRoutes)
+
+
+// ============ Health check and default route ===============
+KarhalRouter.get("/" , (req,res)=>{
 	console.log("Host Header : " , req.headers.host)
 	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 
-// app.use("/admin-info" , adminDashboardRoutes)
-// app.use("/public" ,publicRouter)
-// app.use("/users-data" , usersData)
+// KarhalRouter.use("/admin-info" , adminDashboardRoutes)
+// KarhalRouter.use("/public" ,publicRouter)
+// KarhalRouter.use("/users-data" , usersData)
 
-// global error handler middleware , must place at the end
+
+
+// ============== Now all the request goes through /karhal =============
+app.use("/karhal" , KarhalRouter)
+
+
+// ============== Global Error middleware , must be placed in last ==============
 app.use(errorMiddleware);
+
+
 
 const spinServer = async()=>{
 	try{

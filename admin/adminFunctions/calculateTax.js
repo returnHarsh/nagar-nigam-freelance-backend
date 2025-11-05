@@ -142,7 +142,7 @@
 
 import { errorLogger } from "../../utils/errorLogger.js"
 import { Rate } from "../../models/rate.js"
-import { PropertyType, MultiplierCommercial, getKeyByValue, RoadWidthType, ConstructionType } from "../../data/constants.js"
+import { PropertyType, MultiplierCommercial, getKeyByValue, RoadWidthType, ConstructionType, PropertyTypeReverseMapping } from "../../data/constants.js"
 
 /**
  * Calculates the rate based on road type and construction type
@@ -373,7 +373,10 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		const { carpetRate, emptyRate } = await calculateRate(roadTypeKey, constructionTypeKey);
 
 		// Step 3: Get commercial multiplier
-		const commercialMultiplier = getCommercialMultiplier(propertyType);
+		let commercialMultiplier = getCommercialMultiplier(propertyType)
+		if (commercialMultiplier < 3 && areas.totalCarpetR > 120) {
+			commercialMultiplier = 3;
+		}
 
 		// Step 4: Calculate ARV
 		const arvBreakdown = calculateARV(areas, carpetRate, emptyRate, commercialMultiplier);
@@ -381,14 +384,19 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		// Step 5: Calculate taxes
 		const taxes = calculateTaxes(arvBreakdown.totalARV);
 
+		// Step 6 : Check if this 0 tax property
+		const isTaxExemptProperty = PropertyTypeReverseMapping[propertyType] == "taxExemptProperty";
+		console.log("is TaxEmptyProperty is : " , isTaxExemptProperty);
+
+
 		console.log("\n============== Tax Calculation Complete ==============\n")
 
 		// Return comprehensive result
 		return {
 			// Primary tax values
-			houseTax: taxes.houseTax,
-			waterTax: taxes.waterTax,
-			totalTax: taxes.totalTax,
+			houseTax: isTaxExemptProperty ? 0 : taxes.houseTax,
+			waterTax: isTaxExemptProperty ? 0 : taxes.waterTax,
+			totalTax: isTaxExemptProperty ? 0 : taxes.totalTax,
 			
 			// Detailed breakdown
 			breakdown: {

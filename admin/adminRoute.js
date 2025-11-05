@@ -34,7 +34,7 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { runPythonScript } from "./actions/bulkUploadProcessedData.js";
+import { processSingleProperty, runPythonScript } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
 
@@ -89,13 +89,13 @@ const AdminCustomComponents = {
     'UploadBulkProperties',
     path.resolve(__dirname, './components/UploadBulkProperties.jsx')
   ),
-  BulkBillDownload : componentLoader.add(
-    'BulkBillDownload' , 
-    path.resolve(__dirname , './components/BulkBillDownload.jsx')
+  BulkBillDownload: componentLoader.add(
+    'BulkBillDownload',
+    path.resolve(__dirname, './components/BulkBillDownload.jsx')
   ),
-  FindPropertyIdCustDocument : componentLoader.add(
+  FindPropertyIdCustDocument: componentLoader.add(
     'FindPropertyIdCustDocument',
-    path.resolve(__dirname , './components/FindPropertyIdCustDocument.jsx')
+    path.resolve(__dirname, './components/FindPropertyIdCustDocument.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -184,7 +184,87 @@ const adminJs = new AdminJS({
               };
             }
           },
-          
+
+          // processPropertyAgain: {
+          //   actionType: 'record',
+          //   label: "Process this Property",
+          //   component : false,
+          //   handler: async (request, response, context) => {
+          //     try {
+          //       const { PTIN } = context?.record?.params;
+
+          //       if (!PTIN) {
+          //         return {
+          //           notice: {
+          //             message: "PTIN not found for this record",
+          //             type: "error",
+          //           },
+          //         };
+          //       }
+
+          //       // await processSingleProperty(PTIN);
+          //       processSingleProperty(PTIN);
+
+          //       return {
+          //         notice: {
+          //           message: `Property with PTIN ${PTIN} processed successfully ✅`,
+          //           type: "success",
+          //         },
+          //       };
+          //     } catch (err) {
+          //       console.error("Error in processPropertyAgain:", err);
+          //       return {
+          //         notice: {
+          //           message: "Something went wrong while processing the property.",
+          //           type: "error",
+          //         },
+          //       };
+          //     }
+          //   },
+          // },
+
+          processPropertyAgain: {
+            actionType: 'record',
+            label: "Process this Property",
+            component: false,
+            handler: async (request, response, context) => {
+              try {
+                const { record } = context;
+                const { PTIN } = record?.params || {};
+
+                if (!PTIN) {
+                  return {
+                    record: record.toJSON(),
+                    notice: {
+                      message: "PTIN not found for this record",
+                      type: "error",
+                    },
+                  };
+                }
+
+                // await processSingleProperty(PTIN);
+                await processSingleProperty(PTIN);
+
+                return {
+                  record: record.toJSON(),
+                  notice: {
+                    message: `Property with PTIN ${PTIN} processed successfully ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in processPropertyAgain:", err);
+                return {
+                  record: context?.record?.toJSON?.(),
+                  notice: {
+                    message: "Something went wrong while processing the property.",
+                    type: "error",
+                  },
+                };
+              }
+            },
+          },
+
           importPropertiesWithUI: {
             actionType: 'resource',
             icon: 'Upload',
@@ -202,7 +282,7 @@ const adminJs = new AdminJS({
 
               // POST: Handle file upload
               if (method === 'post') {
-                const { file , fileName } = request.payload || {};
+                const { file, fileName } = request.payload || {};
 
                 if (!file) {
                   return {
@@ -213,7 +293,7 @@ const adminJs = new AdminJS({
                   };
                 }
 
-                 // ====== Decode base64 file (converting the file base64 string to buffer) ========
+                // ====== Decode base64 file (converting the file base64 string to buffer) ========
                 const base64Data = file.split(',')[1];
                 const buffer = Buffer.from(base64Data, 'base64');
 
@@ -230,7 +310,7 @@ const adminJs = new AdminJS({
                   fs.writeFileSync(filePath, buffer);
 
                   const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
-                  const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "karhal" );
+                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "karhal");
 
                   await fsPromises.unlink(filePath).catch(err => console.error(err));
 
@@ -263,14 +343,14 @@ const adminJs = new AdminJS({
             component: AdminCustomComponents.UploadBulkProperties
           },
 
-          bulkDownload : {
+          bulkDownload: {
             actionType: 'resource',
             icon: 'Printer',
             label: 'Download All Bills',
-            component : AdminCustomComponents.BulkBillDownload,
-            handler : generateAndDownloadBulkBill
+            component: AdminCustomComponents.BulkBillDownload,
+            handler: generateAndDownloadBulkBill
             // handler : async(request , response , context)=>{
-              
+
             // return {
             //   redirectUrl: "/admin-internals/bulk-generate-bill",
             //   notice: {
@@ -279,10 +359,10 @@ const adminJs = new AdminJS({
             //   },
             // };
 
-              
+
             // }
           }
-          
+
         },
         properties: {
 
@@ -293,8 +373,8 @@ const adminJs = new AdminJS({
           ward: {
             components: { edit: AdminCustomComponents.PropertyWardSelector }
           },
-          isSuccessSubmit : {
-              isVisible: {
+          isSuccessSubmit: {
+            isVisible: {
               list: true,
               filter: true,
               show: true,
@@ -330,7 +410,7 @@ const adminJs = new AdminJS({
             isVisible: { edit: true, new: false }
           },
           demandNumber: {
-            isVisible: { edit: false, list : true , show : true }
+            isVisible: { edit: false, list: true, show: true }
           },
           PTIN: { isVisible: { list: false, edit: false, filter: false, show: true } },
           floorsData: { type: "mixed", components: { edit: AdminCustomComponents.FloorEditComponent } },
@@ -676,7 +756,7 @@ const adminJs = new AdminJS({
           },
         },
         properties: {
-            propertyId : {
+          propertyId: {
             components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
           },
           showDueAmount: {
@@ -847,8 +927,8 @@ const adminJs = new AdminJS({
             return `arvModification/${uniqueID}-${Date.now()}-${fileName}`;
           },
           validation: {
-    maxSize: 50 * 1024 * 1024, // 50 MB limit
-  },
+            maxSize: 50 * 1024 * 1024, // 50 MB limit
+          },
           componentLoader
         })
       ],
@@ -888,7 +968,7 @@ const adminJs = new AdminJS({
             }
           },
           modificationProof: { isVisible: false },
-          propertyId : {
+          propertyId: {
             components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
           }
         }
@@ -899,13 +979,13 @@ const adminJs = new AdminJS({
       options: {
         navigation: 'Admin Only',
         actions: {
-           actions: {
-          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          edit: { isAccessible: false },
-          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-        },
+          actions: {
+            new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            edit: { isAccessible: false },
+            list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          },
           getWardDetails: {
             actionType: 'record',
             handler: async (request, response, context) => {
@@ -935,12 +1015,12 @@ const adminJs = new AdminJS({
       }
     },
     {
-      resource : NagarNigamPrerequisite,
-      options : {
-        navigation : "Admin Only",
+      resource: NagarNigamPrerequisite,
+      options: {
+        navigation: "Admin Only",
         actions: {
           new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          edit: { isAccessible: false },
+          edit: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
@@ -995,7 +1075,7 @@ const dummyAuthenticate = async (email, password) => {
   // if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
   return ADMIN_DUMMY;
   return null;
-  
+
 }
 
 const authenticate = async (email, password) => {
@@ -1034,7 +1114,7 @@ export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(adminJs, {
     // before: (req, res, next) => {
     //   upload.any()(req, res, next);  // ✅ this is the correct way to attach multer
     // },
-     formidable: {
+    formidable: {
       maxFileSize: 50 * 1024 * 1024, // 50 MB
     },
   })

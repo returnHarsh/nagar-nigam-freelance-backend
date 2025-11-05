@@ -10,6 +10,8 @@ import { errorLogger, errorMiddleware } from "./utils/errorLogger.js";
 import {adminRouter} from "./admin/adminRoute.js"
 import {sessionMiddleware} from "./middlewares/sessionMiddleware.js"
 import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
+// import * as url from 'url'
+// const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 // import { gateKeeper } from "./middlewares/gateKeeper.js";
 
 
@@ -20,6 +22,11 @@ import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
 
 const PORT = process.env.PORT || 8000;
 const app = express();
+
+
+// ========== Serving static files like css file ====================
+app.use(express.static("public"));
+
 // =============== Global Middleware to decide which DB to connect ====================
 // app.use(gateKeeper)
 

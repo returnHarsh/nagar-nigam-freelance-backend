@@ -294,8 +294,6 @@ export const generateAndDownloadBulkBill = async (request, response, context) =>
   }
 };
 
-
-
 // ============== Express Admin Controller ==============
 
 // import { PDFDocument } from 'pdf-lib';
@@ -348,7 +346,6 @@ export const generateAndDownloadBulkBill = async (request, response, context) =>
 //     res.status(500).send('Error generating merged PDF');
 //   }
 // };
-
 
 export const getPropertyId = async (req, res) => {
   try {

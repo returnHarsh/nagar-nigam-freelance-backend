@@ -1,0 +1,9 @@
+@media (max-width: 600px){a[data-css="Property-importPropertiesWithUI-button"]{
+    display: flex;
+    flex-wrap: wrap;
+    padding: 4px;
+    margin-bottom: 5px;
+}}
+@media (max-width: 600px){a[data-css="Property-bulkDownload-button"]{
+    padding: 4px;
+}}

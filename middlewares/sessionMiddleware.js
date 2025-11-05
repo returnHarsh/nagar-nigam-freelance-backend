@@ -6,8 +6,7 @@ console.log("mongo uri ", process.env.MONGO_URI)
 export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
 
 	return session({
-		name: "user-session",
-		name: "myapp_session",
+		name: "express-session",
 		secret: process.env.SECRET_KEY,
 		resave: false,
 		saveUninitialized: false,
@@ -16,7 +15,7 @@ export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
 			collectionName: 'sessions'
 		}),
 		cookie: {
-			maxAge: 1000 * 60 * 60,
+			maxAge: 1000 * 60 * 60 * 10,
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production'
 		}

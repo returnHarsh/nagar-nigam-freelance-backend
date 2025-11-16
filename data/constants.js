@@ -62,7 +62,8 @@ const PropertyType = {
   hotel: "होटल",
   hotelBar: "होटल/बार",
   hotelRestaurant: "होटल/रेस्टोरेंट",
-  hoarding: "होर्डिंग"
+  hoarding: "होर्डिंग",
+  taxExemptProperty: "कर-मुक्त संपत्ति" // for Tax mukt property
 };
 
 const MultiplierCommercial = {

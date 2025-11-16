@@ -21,6 +21,9 @@ import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
 const PORT = process.env.PORT || 8000;
 const app = express();
 
+// ========== Serving static files like css file ====================
+app.use(express.static("public"));
+
 // ============== Main Karhal Router ======================
 const KarhalRouter = express.Router();
 

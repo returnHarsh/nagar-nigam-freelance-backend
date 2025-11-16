@@ -1155,6 +1155,9 @@ const adminJs = new AdminJS({
       }
     }
   ],
+   assets: {
+    styles: ['/sidebar.css'],  // 👈 path relative to express.static()
+  },
   branding: {
     companyName: "Nagar Nigam",
     softwareBrothers: false,

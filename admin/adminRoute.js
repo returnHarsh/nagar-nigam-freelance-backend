@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { spawn } from 'child_process';
 import fsSync from 'fs';
 import fsPromises from "fs/promises"
+import { randomUUID } from "crypto";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -34,10 +35,9 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { processSingleProperty, runPythonScript } from "./actions/bulkUploadProcessedData.js";
+import { processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
-import { sessionMiddleware } from "../middlewares/sessionMiddleware.js";
 
 // lets create the uploads folder is it doens'nt exist
 const isUploadDir = path.join(process.cwd(), "uploads");
@@ -90,13 +90,17 @@ const AdminCustomComponents = {
     'UploadBulkProperties',
     path.resolve(__dirname, './components/UploadBulkProperties.jsx')
   ),
-  BulkBillDownload : componentLoader.add(
-    'BulkBillDownload' , 
-    path.resolve(__dirname , './components/BulkBillDownload.jsx')
+  BulkBillDownload: componentLoader.add(
+    'BulkBillDownload',
+    path.resolve(__dirname, './components/BulkBillDownload.jsx')
   ),
-  FindPropertyIdCustDocument : componentLoader.add(
+  FindPropertyIdCustDocument: componentLoader.add(
     'FindPropertyIdCustDocument',
-    path.resolve(__dirname , './components/FindPropertyIdCustDocument.jsx')
+    path.resolve(__dirname, './components/FindPropertyIdCustDocument.jsx')
+  ),
+  MultiFileUploader: componentLoader.add(
+    'MultiFileUploader',
+    path.resolve(__dirname, './components/MultiFileUploader.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -159,7 +163,7 @@ const adminJs = new AdminJS({
         },
       }
     },
-    {
+     {
       resource: Property,
       options: {
         listProperties: ["PTIN", "houseNumber", "ownerName", "fatherName"],
@@ -169,9 +173,12 @@ const adminJs = new AdminJS({
             after: after_createNewProperty,
           },
           edit: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"  || currentAdmin?.role == "surveyor"),
             before: before_editNewProperty,
             after: after_editNewProperty,
+          },
+          delete: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           generateTaxBillPDF: {
             actionType: 'record',
@@ -185,86 +192,73 @@ const adminJs = new AdminJS({
               };
             }
           },
-          
-          importPropertiesWithUI: {
+
+          // processPropertyAgain: {
+          //   actionType: 'record',
+          //   label: "Process this Property",
+          //   component : false,
+          //   handler: async (request, response, context) => {
+          //     try {
+          //       const { PTIN } = context?.record?.params;
+
+          //       if (!PTIN) {
+          //         return {
+          //           notice: {
+          //             message: "PTIN not found for this record",
+          //             type: "error",
+          //           },
+          //         };
+          //       }
+
+          //       // await processSingleProperty(PTIN);
+          //       processSingleProperty(PTIN);
+
+          //       return {
+          //         notice: {
+          //           message: `Property with PTIN ${PTIN} processed successfully ✅`,
+          //           type: "success",
+          //         },
+          //       };
+          //     } catch (err) {
+          //       console.error("Error in processPropertyAgain:", err);
+          //       return {
+          //         notice: {
+          //           message: "Something went wrong while processing the property.",
+          //           type: "error",
+          //         },
+          //       };
+          //     }
+          //   },
+          // },
+
+          processPropertyWUEXL: {
             actionType: 'resource',
-            icon: 'Upload',
-            label: 'Import Properties',
-
+            component: false,
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
             handler: async (request, response, context) => {
-              const { method } = request;
+              try {
+                await uploadBulkData();
 
-              // GET: Show upload form
-              // if (method === 'get') {
-              //   return {
-              //     uploadUrl: '/admin/api/resources/Property/actions/importProperties'
-              //   };
-              // }
-
-              // POST: Handle file upload
-              if (method === 'post') {
-                const { file , fileName } = request.payload || {};
-
-                if (!file) {
-                  return {
-                    notice: {
-                      type: 'error',
-                      message: 'Please upload an Excel file'
-                    }
-                  };
-                }
-
-                 // ====== Decode base64 file (converting the file base64 string to buffer) ========
-                const base64Data = file.split(',')[1];
-                const buffer = Buffer.from(base64Data, 'base64');
-
-                try {
-                  const uploadDir = path.join(__dirname, '../uploads');
-
-                  if (!fsSync.existsSync(uploadDir)) {
-                    fsSync.mkdirSync(uploadDir, { recursive: true });
-                  }
-
-                  const timestamp = Date.now();
-                  const filePath = path.join(uploadDir, `${timestamp}_${fileName}`);
-
-                  fs.writeFileSync(filePath, buffer);
-
-                  const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
-                  const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "karhal" );
-                  // const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "testing" );
-
-                  await fsPromises.unlink(filePath).catch(err => console.error(err));
-
-                  return {
-                    notice: {
-                      type: 'success',
-                      message: result.message
-                    },
-                    record: {
-                      params: {
-                        importedCount: result.insertedCount,
-                        duplicatesSkipped: result.duplicatesSkipped,
-                        totalProcessed: result.totalProcessed
-                      }
-                    }
-                  };
-
-                } catch (error) {
-                  console.error('Import error:', error);
-
-                  return {
-                    notice: {
-                      type: 'error',
-                      message: `Import failed: ${error.message}`
-                    }
-                  };
-                }
+                return {
+                  notice: {
+                    message: `All properties processed successfully ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in processPropertyWUEXL:", err);
+                return {
+                  notice: {
+                    message: "Something went wrong while processing the properties.",
+                    type: "error",
+                  },
+                };
               }
             },
-            component: AdminCustomComponents.UploadBulkProperties
           },
-          
+
           processPropertyAgain: {
             actionType: 'record',
             label: "Process this Property",
@@ -307,14 +301,97 @@ const adminJs = new AdminJS({
             },
           },
 
-          bulkDownload : {
+          importPropertiesWithUI: {
+            actionType: 'resource',
+            icon: 'Upload',
+            label: 'Import Properties',
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
+            handler: async (request, response, context) => {
+              const { method } = request;
+
+              // GET: Show upload form
+              // if (method === 'get') {
+              //   return {
+              //     uploadUrl: '/admin/api/resources/Property/actions/importProperties'
+              //   };
+              // }
+
+              // POST: Handle file upload
+              if (method === 'post') {
+                const { file, fileName } = request.payload || {};
+
+                if (!file) {
+                  return {
+                    notice: {
+                      type: 'error',
+                      message: 'Please upload an Excel file'
+                    }
+                  };
+                }
+
+                // ====== Decode base64 file (converting the file base64 string to buffer) ========
+                const base64Data = file.split(',')[1];
+                const buffer = Buffer.from(base64Data, 'base64');
+
+                try {
+                  const uploadDir = path.join(__dirname, '../uploads');
+
+                  if (!fsSync.existsSync(uploadDir)) {
+                    fsSync.mkdirSync(uploadDir, { recursive: true });
+                  }
+
+                  const timestamp = Date.now();
+                  const filePath = path.join(uploadDir, `${timestamp}_${fileName}`);
+
+                  fs.writeFileSync(filePath, buffer);
+
+                  const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
+                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "karhal");
+
+                  await fsPromises.unlink(filePath).catch(err => console.error(err));
+
+                  return {
+                    notice: {
+                      type: 'success',
+                      message: result.message
+                    },
+                    record: {
+                      params: {
+                        importedCount: result.insertedCount,
+                        duplicatesSkipped: result.duplicatesSkipped,
+                        totalProcessed: result.totalProcessed
+                      }
+                    }
+                  };
+
+                } catch (error) {
+                  console.error('Import error:', error);
+
+                  return {
+                    notice: {
+                      type: 'error',
+                      message: `Import failed: ${error.message}`
+                    }
+                  };
+                }
+              }
+            },
+            component: AdminCustomComponents.UploadBulkProperties
+          },
+
+          bulkDownload: {
             actionType: 'resource',
             icon: 'Printer',
             label: 'Download All Bills',
-            component : AdminCustomComponents.BulkBillDownload,
-            handler : generateAndDownloadBulkBill
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
+            component: AdminCustomComponents.BulkBillDownload,
+            handler: generateAndDownloadBulkBill
             // handler : async(request , response , context)=>{
-              
+
             // return {
             //   redirectUrl: "/admin-internals/bulk-generate-bill",
             //   notice: {
@@ -323,12 +400,53 @@ const adminJs = new AdminJS({
             //   },
             // };
 
-              
+
             // }
+          },
+
+          uploadToS3: {
+            actionType: "resource",
+            name: "uploadToS3",
+            icon: "Upload",
+            isVisible: false, // show it in the sidebar
+            handler: async (request, response, context) => {
+              try {
+                const { fileName, fileType, fileData , field } = request.payload;
+
+                if (!fileData) {
+                  throw new Error("No file data provided");
+                }
+
+                // Decode the base64 file , here converting back the base64 string into binary data as buffer
+                const buffer = Buffer.from(fileData.split(",")[1], "base64");
+                const key = `property/uploads/${field}/${Date.now()}-${randomUUID()}-${fileName}`;
+
+                await uploadToS3(process.env.AWS_BUCKET, key, buffer, fileType);
+
+                const fileUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+                return {
+                  notice: {
+                    message: "✅ File uploaded successfully",
+                    type: "success",
+                  },
+                  data: { fileUrl },
+                };
+              } catch (err) {
+                console.error("[ERROR] Upload Action:", err);
+                return {
+                  notice: {
+                    message: `Upload failed: ${err.message}`,
+                    type: "error",
+                  },
+                };
+              }
+            },
           }
-          
+
+
         },
-          properties: {
+        properties: {
 
           // ========= need to uncomment =========
           houseNumber: {
@@ -432,88 +550,104 @@ const adminJs = new AdminJS({
           },
         }
       },
-      features: [
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "receiptWithSign", // name of the DB field in which the path of the picture is gonna stored
-            file: "receiptWithSignFile",
-            filePath: "receiptWithSignPath", // 👈 must be unique
-            filesToDelete: "receiptWithSignToDelete", // 👈 must be unique
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/receiptWithSign/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "ownerInterviewer",
-            file: "ownerInterviewerFile",
-            filePath: "ownerInterviewerPath",
-            filesToDelete: "ownerInterviewerToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/ownerInterviewer/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "IDProof",
-            file: "IDProofFile",
-            filePath: "IDProofPath",
-            filesToDelete: "IDProofToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/IDProof/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "houseFrontWithNamePlate",
-            file: "houseFrontWithNamePlateFile",
-            filePath: "houseFrontWithNamePlatePath",
-            filesToDelete: "houseFrontWithNamePlateToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/houseFrontWithNamePlate/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-      ],
+      // features: [
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "receiptWithSign", // name of the DB field in which the path of the picture is gonna stored
+      //       file: "receiptWithSignFile",
+      //       filePath: "receiptWithSignPath", // 👈 must be unique
+      //       filesToDelete: "receiptWithSignToDelete", // 👈 must be unique
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/receiptWithSign/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "ownerInterviewer",
+      //       file: "ownerInterviewerFile",
+      //       filePath: "ownerInterviewerPath",
+      //       filesToDelete: "ownerInterviewerToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/ownerInterviewer/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "IDProof",
+      //       file: "IDProofFile",
+      //       filePath: "IDProofPath",
+      //       filesToDelete: "IDProofToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/IDProof/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "houseFrontWithNamePlate",
+      //       file: "houseFrontWithNamePlateFile",
+      //       filePath: "houseFrontWithNamePlatePath",
+      //       filesToDelete: "houseFrontWithNamePlateToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/houseFrontWithNamePlate/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      // ],
     },
     {
       resource: NagarNigamProperty,

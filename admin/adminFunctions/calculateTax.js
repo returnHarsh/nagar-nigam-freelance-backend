@@ -250,7 +250,10 @@ const calculateTotalAreas = (floors, numberOfFloors) => {
 	let totalCarpetR = 0;
 	let totalCarpetC = 0;
 
-	for (let i = 0; i < Math.min(numberOfFloors, floors.length); i++) {
+	console.log("floors length is : " , floors.length)
+
+	// for (let i = 0; i < Math.min(numberOfFloors, floors.length); i++) {
+	for (let i = 0; i <  floors.length; i++) {
 		const floor = floors[i];
 		totalEmptyR += floor.emptyAreaR;
 		totalEmptyC += floor.emptyAreaC;

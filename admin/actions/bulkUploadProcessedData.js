@@ -15,7 +15,8 @@ const processEachProperty = async(property)=>{
     console.log("running for property with Id : " , property)
 		const {floorsData , roadWidthType , constructionType , propertyType} = property;
 
-		if(!roadWidthType || !roadWidthType || !constructionType){
+		if(!roadWidthType || !propertyType || !constructionType){
+      console.log("⚠️ roadWidthType or propertyType or  constructionType is missing : " , `roadWidthType : ${roadWidthType} , constructionType : ${constructionType} , propertyType : ${propertyType}`)
 			return {success : false , message : "Missing Fields"};
 		}
 
@@ -54,18 +55,18 @@ const processEachProperty = async(property)=>{
 export const uploadBulkData = async()=>{
 	try{
 
-		const properties = await Property.find({processed : false}).lean();
+		const properties = await Property.find({isProcessed : false}).lean();
 
-		// await Promise.all(properties.map(async(property)=>{
-		// 	await processEachProperty(property)
-    //   return "done"
-		// }))
+		await Promise.all(properties.map(async(property)=>{
+			await processEachProperty(property)
+      return "done"
+		}))
 
     
 
-    for(const property of properties){
-      await processEachProperty(property)
-    }
+    // for(const property of properties){
+    //   await processEachProperty(property)
+    // }
     
     console.log("✅ Done Processing the Whole Property Record")
 
@@ -100,6 +101,7 @@ export function runPythonScript(scriptPath, excelFilePath) {
 
 	const venvPythonPath = path.resolve("scripts/.venv/bin/python")
     // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'barnal']);
+    // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'testing']);
     const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'karhal']);
     
     let stdout = '';

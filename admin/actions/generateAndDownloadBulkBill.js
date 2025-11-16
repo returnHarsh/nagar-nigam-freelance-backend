@@ -206,8 +206,11 @@ export const generateAndDownloadBulkBillOld = async (request, response, context)
 
 export const generateAndDownloadBulkBill = async (request, response, context) => {
   try {
+
+    const {wardNumber} = request?.query || {}
+    console.log("wardNumber is : " , wardNumber);
     // 1. Fetch properties with bills
-    const properties = await Property.find({ latestBillUrl: { $exists: true } }).lean();
+    const properties = await Property.find({ latestBillUrl: { $exists: true } , wardNumber }).lean();
 
     if (!properties || properties.length === 0) {
       return {

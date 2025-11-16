@@ -140,6 +140,11 @@ const propertySchema = new mongoose.Schema({
   // field to detect if there occur any error while saving this property
   isSuccessSubmit : {type : Boolean , default : true},
 
+  // for bulk property upload
+  isProcessed : {type : Boolean , default : false}
+
+  
+
 }, { timestamps: true, strict: false });
 
 

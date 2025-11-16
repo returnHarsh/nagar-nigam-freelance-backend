@@ -232,6 +232,7 @@ const adminJs = new AdminJS({
 
                   const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
                   const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "karhal" );
+                  // const result = await runPythonScript(scriptPath, filePath , process.env.MONGO_URI ,  "testing" );
 
                   await fsPromises.unlink(filePath).catch(err => console.error(err));
 
@@ -327,7 +328,7 @@ const adminJs = new AdminJS({
           }
           
         },
-        properties: {
+          properties: {
 
           // ========= need to uncomment =========
           houseNumber: {
@@ -336,18 +337,33 @@ const adminJs = new AdminJS({
           ward: {
             components: { edit: AdminCustomComponents.PropertyWardSelector }
           },
-          isSuccessSubmit : {
-              isVisible: {
+          isProcessed: {
+            isVisible: {
               list: true,
               filter: true,
-              show: true,
+              show: false,
               edit: false,
               new: false
             }
           },
-          // // field that the surveyor cannot change
-          // fatherName: { isDisabled: true },
-          // ownerName: { isDisabled: true },
+          isSuccessSubmit: {
+            isVisible: {
+              list: true,
+              filter: true,
+              show: false,
+              edit: false,
+              new: false
+            }
+          },
+          isSurveyVerified: {
+            isVisible: {
+              list: true,
+              filter: true,
+              show: false,
+              edit: false,
+              new: false
+            }
+          },
           locality: {
             isVisible: {
               list: true,
@@ -369,13 +385,14 @@ const adminJs = new AdminJS({
           // ========== up until here ============
 
           displayId: { isTitle: true },
+          // PTIN: { isTitle: true },
           editProof: {
             isVisible: { edit: true, new: false }
           },
           demandNumber: {
-            isVisible: { edit: false, list : true , show : true }
+            isVisible: { edit: false, list: true, show: true, filter: true }
           },
-          PTIN: { isVisible: { list: false, edit: false, filter: false, show: true } },
+          PTIN: { isVisible: { list: false, edit: false, filter: true, show: true } },
           floorsData: { type: "mixed", components: { edit: AdminCustomComponents.FloorEditComponent } },
           location: { components: { edit: AdminCustomComponents.GetLocationComp, show: AdminCustomComponents.GetLocationComp } },
 
@@ -383,10 +400,23 @@ const adminJs = new AdminJS({
           displayId: { isVisible: false },
           createdAt: { isVisible: false },
           updatedAt: { isVisible: false },
-          receiptWithSign: { isVisible: false },
-          ownerInterviewer: { isVisible: false },
-          IDProof: { isVisible: false },
-          houseFrontWithNamePlate: { isVisible: false },
+          receiptWithSign: { isVisible: { edit: false , show : true } },
+          ownerInterviewer: { isVisible: { edit: false , show : true } },
+          IDProof: { isVisible: { edit: false , show : true} },
+          houseFrontWithNamePlate: { isVisible: { edit: false , show : true } },
+
+          // Custom virtual field for uploading
+          customUploads: {
+            isVisible: { edit: true, list: false, show: false, filter: false },
+            components: {
+              edit: AdminCustomComponents.MultiFileUploader,
+            },
+            // 👇 inject environment variables safely
+            props: {
+              bucket: process.env.AWS_BUCKET,
+              region: process.env.AWS_REGION,
+            },
+          },
 
           tax: {
             isVisible: { show: true, edit: false },

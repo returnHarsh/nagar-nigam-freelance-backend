@@ -10,6 +10,7 @@ import { errorLogger, errorMiddleware } from "./utils/errorLogger.js";
 import {adminRouter} from "./admin/adminRoute.js"
 import {sessionMiddleware} from "./middlewares/sessionMiddleware.js"
 import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
+import s3PresignRoute from "./routes/s3PresignRoute.js";
 // import * as url from 'url'
 // const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 // import { gateKeeper } from "./middlewares/gateKeeper.js";
@@ -40,6 +41,7 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 
 // registering the adminjs
 app.use("/admin" , adminRouter)
+app.use("/admin/s3", s3PresignRoute);
 
 // registering the body parser middleware
 app.use(express.json({ limit: '50mb' }));

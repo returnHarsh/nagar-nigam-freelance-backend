@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { spawn } from 'child_process';
 import fsSync from 'fs';
 import fsPromises from "fs/promises"
+import { randomUUID } from "crypto";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -34,7 +35,7 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { processSingleProperty, runPythonScript } from "./actions/bulkUploadProcessedData.js";
+import { processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
 
@@ -96,6 +97,10 @@ const AdminCustomComponents = {
   FindPropertyIdCustDocument: componentLoader.add(
     'FindPropertyIdCustDocument',
     path.resolve(__dirname, './components/FindPropertyIdCustDocument.jsx')
+  ),
+  MultiFileUploader: componentLoader.add(
+    'MultiFileUploader',
+    path.resolve(__dirname, './components/MultiFileUploader.jsx')
   )
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
@@ -150,9 +155,12 @@ const adminJs = new AdminJS({
           edit: { isAccessible: false },
           list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          // show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          // list: { isAccessible: true },
+          show: { isAccessible: true },
         },
         properties: {
+          name: { isTitle: true },
           createdAt: { isVisible: false },
           updatedAt: { isVisible: false },
         },
@@ -168,9 +176,12 @@ const adminJs = new AdminJS({
             after: after_createNewProperty,
           },
           edit: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"  || currentAdmin?.role == "surveyor"),
             before: before_editNewProperty,
             after: after_editNewProperty,
+          },
+          delete: {
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           generateTaxBillPDF: {
             actionType: 'record',
@@ -223,6 +234,34 @@ const adminJs = new AdminJS({
           //   },
           // },
 
+          processPropertyWUEXL: {
+            actionType: 'resource',
+            component: false,
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
+            handler: async (request, response, context) => {
+              try {
+                await uploadBulkData();
+
+                return {
+                  notice: {
+                    message: `All properties processed successfully ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in processPropertyWUEXL:", err);
+                return {
+                  notice: {
+                    message: "Something went wrong while processing the properties.",
+                    type: "error",
+                  },
+                };
+              }
+            },
+          },
+
           processPropertyAgain: {
             actionType: 'record',
             label: "Process this Property",
@@ -269,7 +308,9 @@ const adminJs = new AdminJS({
             actionType: 'resource',
             icon: 'Upload',
             label: 'Import Properties',
-
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
             handler: async (request, response, context) => {
               const { method } = request;
 
@@ -310,7 +351,7 @@ const adminJs = new AdminJS({
                   fs.writeFileSync(filePath, buffer);
 
                   const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
-                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "karhal");
+                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "barnal");
 
                   await fsPromises.unlink(filePath).catch(err => console.error(err));
 
@@ -347,6 +388,9 @@ const adminJs = new AdminJS({
             actionType: 'resource',
             icon: 'Printer',
             label: 'Download All Bills',
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
             component: AdminCustomComponents.BulkBillDownload,
             handler: generateAndDownloadBulkBill
             // handler : async(request , response , context)=>{
@@ -361,7 +405,48 @@ const adminJs = new AdminJS({
 
 
             // }
+          },
+
+          uploadToS3: {
+            actionType: "resource",
+            name: "uploadToS3",
+            icon: "Upload",
+            isVisible: false, // show it in the sidebar
+            handler: async (request, response, context) => {
+              try {
+                const { fileName, fileType, fileData , field } = request.payload;
+
+                if (!fileData) {
+                  throw new Error("No file data provided");
+                }
+
+                // Decode the base64 file , here converting back the base64 string into binary data as buffer
+                const buffer = Buffer.from(fileData.split(",")[1], "base64");
+                const key = `property/uploads/${field}/${Date.now()}-${randomUUID()}-${fileName}`;
+
+                await uploadToS3(process.env.AWS_BUCKET, key, buffer, fileType);
+
+                const fileUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+                return {
+                  notice: {
+                    message: "✅ File uploaded successfully",
+                    type: "success",
+                  },
+                  data: { fileUrl },
+                };
+              } catch (err) {
+                console.error("[ERROR] Upload Action:", err);
+                return {
+                  notice: {
+                    message: `Upload failed: ${err.message}`,
+                    type: "error",
+                  },
+                };
+              }
+            },
           }
+
 
         },
         properties: {
@@ -373,18 +458,33 @@ const adminJs = new AdminJS({
           ward: {
             components: { edit: AdminCustomComponents.PropertyWardSelector }
           },
-          isSuccessSubmit: {
+          isProcessed: {
             isVisible: {
               list: true,
               filter: true,
-              show: true,
+              show: false,
               edit: false,
               new: false
             }
           },
-          // // field that the surveyor cannot change
-          // fatherName: { isDisabled: true },
-          // ownerName: { isDisabled: true },
+          isSuccessSubmit: {
+            isVisible: {
+              list: true,
+              filter: true,
+              show: false,
+              edit: false,
+              new: false
+            }
+          },
+          isSurveyVerified: {
+            isVisible: {
+              list: true,
+              filter: true,
+              show: false,
+              edit: false,
+              new: false
+            }
+          },
           locality: {
             isVisible: {
               list: true,
@@ -406,13 +506,14 @@ const adminJs = new AdminJS({
           // ========== up until here ============
 
           displayId: { isTitle: true },
+          // PTIN: { isTitle: true },
           editProof: {
             isVisible: { edit: true, new: false }
           },
           demandNumber: {
-            isVisible: { edit: false, list: true, show: true }
+            isVisible: { edit: false, list: true, show: true, filter: true }
           },
-          PTIN: { isVisible: { list: false, edit: false, filter: false, show: true } },
+          PTIN: { isVisible: { list: false, edit: false, filter: true, show: true } },
           floorsData: { type: "mixed", components: { edit: AdminCustomComponents.FloorEditComponent } },
           location: { components: { edit: AdminCustomComponents.GetLocationComp, show: AdminCustomComponents.GetLocationComp } },
 
@@ -420,10 +521,23 @@ const adminJs = new AdminJS({
           displayId: { isVisible: false },
           createdAt: { isVisible: false },
           updatedAt: { isVisible: false },
-          receiptWithSign: { isVisible: false },
-          ownerInterviewer: { isVisible: false },
-          IDProof: { isVisible: false },
-          houseFrontWithNamePlate: { isVisible: false },
+          receiptWithSign: { isVisible: { edit: false , show : true } },
+          ownerInterviewer: { isVisible: { edit: false , show : true } },
+          IDProof: { isVisible: { edit: false , show : true} },
+          houseFrontWithNamePlate: { isVisible: { edit: false , show : true } },
+
+          // Custom virtual field for uploading
+          customUploads: {
+            isVisible: { edit: true, list: false, show: false, filter: false },
+            components: {
+              edit: AdminCustomComponents.MultiFileUploader,
+            },
+            // 👇 inject environment variables safely
+            props: {
+              bucket: process.env.AWS_BUCKET,
+              region: process.env.AWS_REGION,
+            },
+          },
 
           tax: {
             isVisible: { show: true, edit: false },
@@ -439,88 +553,104 @@ const adminJs = new AdminJS({
           },
         }
       },
-      features: [
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "receiptWithSign", // name of the DB field in which the path of the picture is gonna stored
-            file: "receiptWithSignFile",
-            filePath: "receiptWithSignPath", // 👈 must be unique
-            filesToDelete: "receiptWithSignToDelete", // 👈 must be unique
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/receiptWithSign/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "ownerInterviewer",
-            file: "ownerInterviewerFile",
-            filePath: "ownerInterviewerPath",
-            filesToDelete: "ownerInterviewerToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/ownerInterviewer/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "IDProof",
-            file: "IDProofFile",
-            filePath: "IDProofPath",
-            filesToDelete: "IDProofToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/IDProof/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-        uploadFeature({
-          provider: {
-            aws: {
-              bucket: process.env.AWS_BUCKET,
-              client: s3(),
-              region: process.env.AWS_REGION
-            },
-          },
-          properties: {
-            key: "houseFrontWithNamePlate",
-            file: "houseFrontWithNamePlateFile",
-            filePath: "houseFrontWithNamePlatePath",
-            filesToDelete: "houseFrontWithNamePlateToDelete",
-          },
-          uploadPath: (record, filename) => {
-            const uniqueID = record?.params?._id || "temp";
-            return `property/houseFrontWithNamePlate/${uniqueID}-${Date.now()}-${filename}`;
-          },
-          componentLoader,
-        }),
-      ],
+      // features: [
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "receiptWithSign", // name of the DB field in which the path of the picture is gonna stored
+      //       file: "receiptWithSignFile",
+      //       filePath: "receiptWithSignPath", // 👈 must be unique
+      //       filesToDelete: "receiptWithSignToDelete", // 👈 must be unique
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/receiptWithSign/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "ownerInterviewer",
+      //       file: "ownerInterviewerFile",
+      //       filePath: "ownerInterviewerPath",
+      //       filesToDelete: "ownerInterviewerToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/ownerInterviewer/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "IDProof",
+      //       file: "IDProofFile",
+      //       filePath: "IDProofPath",
+      //       filesToDelete: "IDProofToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/IDProof/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      //   uploadFeature({
+      //     provider: {
+      //       aws: {
+      //         bucket: process.env.AWS_BUCKET,
+      //         client: s3(),
+      //         region: process.env.AWS_REGION
+      //       },
+      //     },
+      //     properties: {
+      //       key: "houseFrontWithNamePlate",
+      //       file: "houseFrontWithNamePlateFile",
+      //       filePath: "houseFrontWithNamePlatePath",
+      //       filesToDelete: "houseFrontWithNamePlateToDelete",
+      //     },
+      //     uploadPath: (record, filename) => {
+      //       const uniqueID = record?.params?._id || "temp";
+      //       return `property/houseFrontWithNamePlate/${uniqueID}-${Date.now()}-${filename}`;
+      //     },
+      //     validation: {
+      //       mimeTypes: ["image/png", "image/jpeg", "application/pdf"], // optional
+      //       maxSize: 5 * 1024 * 1024, // 5 MB limit
+      //     },
+      //     componentLoader,
+      //   }),
+      // ],
     },
     {
       resource: NagarNigamProperty,
@@ -978,16 +1108,16 @@ const adminJs = new AdminJS({
       resource: PropertyWardDetail,
       options: {
         navigation: 'Admin Only',
+        isVisible: ({ currentAdmin }) => currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'),
         actions: {
-          actions: {
-            new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-            edit: { isAccessible: false },
-            list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-            delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-            show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          },
+          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          edit: { isAccessible: false },
+          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           getWardDetails: {
             actionType: 'record',
+            // isVisible : false,
             handler: async (request, response, context) => {
               try {
                 // =========== here we have to return all the ward details ==================
@@ -1028,6 +1158,9 @@ const adminJs = new AdminJS({
       }
     }
   ],
+  assets: {
+    styles: ['/sidebar.css'],  // 👈 path relative to express.static()
+  },
   branding: {
     companyName: "Nagar Nigam",
     softwareBrothers: false,

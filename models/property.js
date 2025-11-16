@@ -89,14 +89,14 @@ const propertySchema = new mongoose.Schema({
   gender: { type: String, enum: ["male", "female", "others"] },
   // mobile: { type: Number },
   aadharNumber: { type: Number },
-  propertyName: { type: String, trim: true },
-  sequenceNumber: { type: Number },
+  propertyName: { type: String, trim: true},
+  // sequenceNumber: { type: Number},
   email : {type : String , trim : true},
 
-  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"] , required : false},
-  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : false},
-  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true , required : false},
-  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true , required : false},
+  propertyClass : {type : String , enum : ["Residential" , "Commercial" , "Mixed"] , required : true},
+  propertyType: { type: String, trim: true, enum: Object.values(PropertyType) , required : true},
+  constructionType: { type: String, trim: true, enum: Object.values(ConstructionType) , required : true , required : true},
+  roadWidthType: { type: String, trim: true, enum: Object.values(RoadWidthType) , required : true , required : true},
 
   numberOfToilets: { type: Number, default: 0 },
 
@@ -120,7 +120,7 @@ const propertySchema = new mongoose.Schema({
   houseFrontWithNamePlate: { type: String },
 
   isSurveyVerified: { type: Boolean , default : false},
-  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' , required : false },
+  surveyor: { type: mongoose.Schema.Types.ObjectId, ref: 'Surveyor' , required : false},
 
   propertyGroup : {type : String , enum : ["governmentOffices" , "schoolsAndColleges" , "hospitalsAndClinics" , "parksAndRecreation" , "transportHubs" , "localShops"]},
 
@@ -139,13 +139,14 @@ const propertySchema = new mongoose.Schema({
 
   // field to detect if there occur any error while saving this property
   isSuccessSubmit : {type : Boolean , default : true},
+  isProcessed : {type : Boolean , default : false},
 
 }, { timestamps: true, strict: false });
 
 
 // Virtual field to choose email or fallback to phone
 propertySchema.virtual("displayId").get(function () {
-  return this.email || this.phoneNumber || this.PTIN;
+  return this.PTIN || this.email || this.phoneNumber;
 });
 
 // Make virtuals appear when converting document to JSON
@@ -163,8 +164,8 @@ propertySchema.pre('save', async function(next) {
       this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
     }
     if(this.isNew && !this.demandNumber){
-      const count = await mongoose.model('Property').countDocuments();
-      this.demandNumber = count+1;
+      // const count = await mongoose.model('Property').countDocuments();
+      this.demandNumber = this.newHouseNumber;
     }
     next();
   } catch (err) {

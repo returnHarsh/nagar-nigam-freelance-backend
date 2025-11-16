@@ -7,3 +7,23 @@
 @media (max-width: 600px){a[data-css="Property-bulkDownload-button"]{
     padding: 4px;
 }}
+
+/* Fix for invisible overlay blocking clicks */
+[data-css*="Overlay"], 
+.adminjs_Overlay,
+.sc-hjriPb {
+  pointer-events: none !important;
+}
+
+button[type="submit"] {
+  position: relative;
+  z-index: 9999;
+}
+
+form {
+  padding-bottom: 80px !important;
+}
+
+.adminjs_UploadInputOverlay {
+  pointer-events: none !important;
+}

@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { Property } from "../models/formModelV2.js";
+import { Property } from "../models/property.js";
 import { ActivityLogs } from "../models/activityLogSchema.js";
 import User from "../models/userModel.js";
 import { generateAndSendToken } from "../auth/authUtils.js";

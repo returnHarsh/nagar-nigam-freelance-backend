@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Box, Button, MessageBox, Loader, Icon } from '@adminjs/design-system';
+import { Box, Button, MessageBox, Loader, Icon, Link } from '@adminjs/design-system';
 import { ApiClient } from 'adminjs';
 
 const BulkBillDownload = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('success');
+  const [mergedPdfUrl , setMergedPdfUrl] = useState('')
+  const [isPdfReady , setIsPdfReady] = useState(false);
+  const [wardNumber , setWardNumber] = useState();
 
   const api = new ApiClient();
 
@@ -18,6 +21,7 @@ const BulkBillDownload = () => {
       const response = await api.resourceAction({
         resourceId: 'Property', // Change this to match your actual resource ID in AdminJS
         actionName: 'bulkDownload',
+        params : {wardNumber}
       });
 
       setLoading(false);
@@ -26,8 +30,12 @@ const BulkBillDownload = () => {
         setMessage(response.data.message);
         setMessageType('success');
 
+        setMergedPdfUrl(response.data.downloadUrl)
+        setIsPdfReady(true);
+
         // Open S3 URL in new tab to trigger download
         window.open(response.data.downloadUrl, '_blank');
+        
         
         // Alternative method: Force download without opening new tab
         // Uncomment if you prefer this approach:
@@ -53,11 +61,39 @@ const BulkBillDownload = () => {
   };
 
   return (
-    <Box padding="xl">
+    <>
+      <Box padding="xl">
       <Box marginBottom="lg">
         <h2>Download All Property Bills</h2>
         <p>This will merge all property bills into a single PDF file and save it to S3.</p>
       </Box>
+
+      {/* 👇 Input Field for User Number */}
+      <Box marginBottom="lg">
+        <label htmlFor="userNumber">Enter Number:</label>
+        <input
+          id="userNumber"
+          type="number"
+          value={wardNumber}
+          onChange={(e) => setWardNumber(e.target.value)}
+          placeholder="Enter a number"
+          style={{
+            width: "100%",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            marginTop: "8px",
+          }}
+        />
+      </Box>
+
+      {isPdfReady && (
+        <Box marginBottom="lg">
+          <a href={mergedPdfUrl} target="_blank" rel="noopener noreferrer">
+            View Merged PDF
+          </a>
+        </Box>
+      )}
 
       <Button
         onClick={handleDownload}
@@ -68,12 +104,12 @@ const BulkBillDownload = () => {
         {loading ? (
           <>
             <Loader />
-            <span style={{ marginLeft: '10px' }}>Generating PDF...</span>
+            <span style={{ marginLeft: "10px" }}>Generating PDF...</span>
           </>
         ) : (
           <>
             <Icon icon="Download" />
-            <span style={{ marginLeft: '10px' }}>Download All Bills</span>
+            <span style={{ marginLeft: "10px" }}>Download All Bills</span>
           </>
         )}
       </Button>
@@ -88,7 +124,8 @@ const BulkBillDownload = () => {
         </Box>
       )}
     </Box>
-  );
-};
+    </>
+  )
+}
 
 export default BulkBillDownload;

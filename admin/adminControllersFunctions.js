@@ -166,8 +166,8 @@ export const before_createNewProperty = async (request, context) => {
 		// ********************************** here we are creating new property ********************************
 
 		const propertyDoc = request.payload;
-		const floorsData = buildFloorsData(propertyDoc);
-		console.log("floors data is : ", floorsData);
+		// const floorsData = buildFloorsData(propertyDoc);
+		// console.log("floors data is : ", floorsData);
 		// if (!floorsData.numberOfFloors || !floorsData.floors?.length) validatonError("floorsData", "please fill the floors Data")
 		// if (!propertyDoc.surveyor) validatonError("surveyor", "Please fill who is taking this survey")
 		// if (!propertyDoc.propertyType) validatonError("propertyType", "Please fill the propertyType")
@@ -225,6 +225,9 @@ export const after_createNewProperty = async (response, request, context) => {
 			propertyDoc.propertyGroup = mapClassifiedProperty(propertyDoc.propertyType)
 			await Property.findByIdAndUpdate(propertyDoc._id, { propertyGroup: propertyDoc.propertyGroup });
 		}
+
+		// ============== Now finally setting the isProcessed : true for property =====================
+		await Property.findByIdAndUpdate(propertyDoc._id, { isProcessed : true })
 
 		// ============ updating the surveryor doc =================
 		const surveyor = await Surveyor.findById(propertyDoc.surveyor);

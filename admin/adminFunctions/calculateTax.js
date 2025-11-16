@@ -250,7 +250,10 @@ const calculateTotalAreas = (floors, numberOfFloors) => {
 	let totalCarpetR = 0;
 	let totalCarpetC = 0;
 
-	for (let i = 0; i < Math.min(numberOfFloors, floors.length); i++) {
+	console.log("floors length is : " , floors.length)
+
+	// for (let i = 0; i < Math.min(numberOfFloors, floors.length); i++) {
+	for (let i = 0; i <  floors.length; i++) {
 		const floor = floors[i];
 		totalEmptyR += floor.emptyAreaR;
 		totalEmptyC += floor.emptyAreaC;
@@ -347,6 +350,9 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		// Validate input parameters
 		if (!roadType || !constructionType || !propertyType) {
 			throw new Error('Missing required parameters: roadType, constructionType, and propertyType are required')
+			if (!roadType) throw new ValidationError({ roadWidthType: { message: "This Field is required" } })
+			else if (!constructionType) throw new ValidationError({ constructionType: { message: "This Field is required" } })
+			else throw new ValidationError({ propertyType: { message: "This Field is required" } })
 		}
 
 		// Validate floors data
@@ -372,11 +378,13 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		// Step 2: Get rates from database
 		const { carpetRate, emptyRate } = await calculateRate(roadTypeKey, constructionTypeKey);
 
-		// Step 3: Get commercial multiplier
-		let commercialMultiplier = getCommercialMultiplier(propertyType)
-		if (commercialMultiplier < 3 && areas.totalCarpetR > 120) {
-			commercialMultiplier = 3;
-		}
+		// Step 3: Get commercial multiplier , to be uncomment in future
+		// let commercialMultiplier = getCommercialMultiplier(propertyType)
+		// if (commercialMultiplier < 3 && areas.totalCarpetC > 120) {
+		// 	commercialMultiplier = 3;
+		// }
+
+		const commercialMultiplier = 3;
 
 		// Step 4: Calculate ARV
 		const arvBreakdown = calculateARV(areas, carpetRate, emptyRate, commercialMultiplier);

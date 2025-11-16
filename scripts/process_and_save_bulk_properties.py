@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import logging
 import random
+import unicodedata
 
 # Setup logging
 logging.basicConfig(
@@ -167,7 +168,10 @@ class PropertyDataProcessor:
         commercial_empty = float(self.safe_get_value(row, "Empty_Area_Commercial", 0))
         residential_empty = float(self.safe_get_value(row, "Residential_Empty_Area", 0))
 
-        for floor_num in range(1, num_floors + 1):
+        # for floor_num in range(1, num_floors + 1):
+        for floor_num in range(1, 4 + 1):
+            # print("******************************** floor num is : " , floor_num)
+            # print("******************************** floors are : " , floors)
             commercial_carpet_col = f"Commercial_Coppate_Area_Floor{floor_num}"
             residential_carpet_col = f"Residential_Coppate_Area_Floor{floor_num}"
 
@@ -189,15 +193,20 @@ class PropertyDataProcessor:
         # if self.is_duplicate(row):
         #     return None
 
-        print("======= ROW IS : ========= " , row)
+        # print("======= ROW IS : ========= " , row)
         
         # Updating the demandNumber
         self.demandNumber = self.demandNumber + 1
 
+        # print("=========== ward is : " , str(self.safe_get_value(row, "WARD NAME", "")) )
+        # print("========== propertyWardDetails are : " , self.propertyWardDetails[str(self.safe_get_value(row, "WARD NAME", ""))])
+        # wardName = str(self.safe_get_value(row, "WARD NAME", "")) 
+        # print("======== locality is : " , str(self.propertyWardDetails.get(wardName_normalized)))
+
         """Process a single row and convert to schema format"""
         try:
             processed_row = {
-                "PTIN" : f"UP{self.safe_get_value(row, 'DISTIRCT CODE', 'UP')}{generate_numeric_id()}",
+                "PTIN" : f"UP{self.safe_get_value(row, 'DISTIRCT CODE', '17')}{generate_numeric_id()}",
                 "ward": str(self.safe_get_value(row, "WARD NAME", "")),
                 "wardNumber": str(self.safe_get_value(row, "WARD NUMBER", "")),
                 "houseNumber": str(self.safe_get_value(row, "HOUSE_NUMBER", "")),
@@ -246,7 +255,8 @@ class PropertyDataProcessor:
                 if processed_row:
                     self.processed_data.append(processed_row)
                 else:
-                    logger.warning(f"⚠️ Skipped row {idx + 1}")
+                    logger.warning(f"⚠️ Skipped row {idx + 1} , row is : {row}")
+                    logger.warning(f"⚠️ Skipped row {idx + 1} , and processed_row is : =============== \n " , processed_row)
 
                 # Progress logging for large files
                 if (idx + 1) % 100 == 0:

@@ -85,6 +85,7 @@ export const bulkUploadNagarNigamData = async (request, response, context) => {
       const bulkOps = validRecords.map(record => ({
         updateOne: {
           filter: {
+            ward : record.ward,
             ownerName: record.ownerName,
             houseNumber: record.houseNumber,
             fatherName: record.fatherName

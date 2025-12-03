@@ -35,7 +35,7 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
+import { generateBulkFaultyPDF, processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
 
@@ -101,11 +101,15 @@ const AdminCustomComponents = {
   MultiFileUploader: componentLoader.add(
     'MultiFileUploader',
     path.resolve(__dirname, './components/MultiFileUploader.jsx')
-  )
+  ),
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
   //   path.resolve(__dirname , "./components/CustomPage.jsx" )
   // )
+  AdminDashboardCustomComp: componentLoader.add(
+    'AdminDashboardStats',
+    path.resolve(__dirname, './components/AdminDashboardStats.jsx')
+  )
 };
 
 
@@ -176,7 +180,7 @@ const adminJs = new AdminJS({
             after: after_createNewProperty,
           },
           edit: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"  || currentAdmin?.role == "surveyor"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "surveyor"),
             before: before_editNewProperty,
             after: after_editNewProperty,
           },
@@ -255,6 +259,33 @@ const adminJs = new AdminJS({
                 return {
                   notice: {
                     message: "Something went wrong while processing the properties.",
+                    type: "error",
+                  },
+                };
+              }
+            },
+          },
+          generateFaultyPDF: {
+            actionType: 'resource',
+            component: false,
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
+            handler: async (request, response, context) => {
+              try {
+                const totalProperties = await generateBulkFaultyPDF();
+
+                return {
+                  notice: {
+                    message: `PDF generated successfully for ${totalProperties} Properties ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in generateFaultyPDF:", err);
+                return {
+                  notice: {
+                    message: "Something went wrong while generating the PDFs.",
                     type: "error",
                   },
                 };
@@ -414,7 +445,7 @@ const adminJs = new AdminJS({
             isVisible: false, // show it in the sidebar
             handler: async (request, response, context) => {
               try {
-                const { fileName, fileType, fileData , field } = request.payload;
+                const { fileName, fileType, fileData, field } = request.payload;
 
                 if (!fileData) {
                   throw new Error("No file data provided");
@@ -521,10 +552,10 @@ const adminJs = new AdminJS({
           displayId: { isVisible: false },
           createdAt: { isVisible: false },
           updatedAt: { isVisible: false },
-          receiptWithSign: { isVisible: { edit: false , show : true } },
-          ownerInterviewer: { isVisible: { edit: false , show : true } },
-          IDProof: { isVisible: { edit: false , show : true} },
-          houseFrontWithNamePlate: { isVisible: { edit: false , show : true } },
+          receiptWithSign: { isVisible: { edit: false, show: true } },
+          ownerInterviewer: { isVisible: { edit: false, show: true } },
+          IDProof: { isVisible: { edit: false, show: true } },
+          houseFrontWithNamePlate: { isVisible: { edit: false, show: true } },
 
           // Custom virtual field for uploading
           customUploads: {
@@ -1156,7 +1187,32 @@ const adminJs = new AdminJS({
           show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
         },
       }
-    }
+    },
+
+    // fake resource
+    // {
+    //   resource: {name : 'Dashboard'},
+    //   options: {
+    //     navigation: {
+    //       icon: 'Dashboard',
+    //       name: 'Dashboard', // This becomes your sidebar item
+    //     },
+    //     actions: {
+    //       dashboard: {
+    //         icon: 'Dashboard',
+    //         label: 'Dashboard',
+    //         actionType: 'resource',
+    //         component: AdminCustomComponents.AdminDashboardCustomComp,
+    //         isVisible: ({ currentAdmin }) => {
+    //           return (
+    //             currentAdmin &&
+    //             (currentAdmin.role === "admin" || currentAdmin.role === "super-admin")
+    //           );
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   ],
   assets: {
     styles: ['/sidebar.css'],  // 👈 path relative to express.static()
@@ -1193,7 +1249,17 @@ const adminJs = new AdminJS({
   },
   componentLoader,
   dashboard: null,
-  rootPath: "/admin"
+  rootPath: "/admin",
+  pages : {
+    dashboard : {
+      label : "Dashboard",
+      component : AdminCustomComponents.AdminDashboardCustomComp,
+      isVisible: ({ currentAdmin }) => {
+      return currentAdmin && 
+        (currentAdmin.role === "admin" || currentAdmin.role === "super-admin");
+    }
+    }
+  }
 })
 
 adminJs.watch();

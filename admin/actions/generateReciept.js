@@ -762,14 +762,14 @@
 //       font-weight: 400;
 //       font-style: normal;
 //     }
-    
+
 //     @font-face {
 //       font-family: 'NotoSans';
 //       src: url(data:font/truetype;charset=utf-8;base64,${englishFont}) format('truetype');
 //       font-weight: 400;
 //       font-style: normal;
 //     }
-    
+
 //     * {
 //       margin: 0;
 //       padding: 0;
@@ -959,7 +959,7 @@
 //         background: white;
 //         padding: 0;
 //       }
-      
+
 //       .page-wrapper {
 //         max-width: 100%;
 //       }
@@ -968,7 +968,7 @@
 //         page-break-inside: avoid;
 //       }
 //     }
-      
+
 //   </style>
 // </head>
 // <body>
@@ -1344,16 +1344,20 @@ class BrowserPool {
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage', // Important for Docker/limited memory
+          '--disable-dev-shm-usage',
           '--disable-gpu',
           '--disable-software-rasterizer',
           '--font-render-hinting=medium',
-          '--enable-font-antialiasing'
+          '--enable-font-antialiasing',
+          '--disable-extensions',                           
+          '--no-first-run',                                 
+          '--no-zygote',                                    
+          '--disable-features=IsolateOrigins,site-per-process'
         ]
       });
-      
+
       console.log('✅ Browser instance created successfully');
-      
+
       // Handle browser disconnect
       this.browser.on('disconnected', () => {
         console.log('⚠️ Browser disconnected, will reinitialize on next request');
@@ -1380,11 +1384,11 @@ class BrowserPool {
   async getPage() {
     const browser = await this.getBrowser();
     const page = await browser.newPage();
-    
+
     // Optimize page settings
     await page.setViewport({ width: 800, height: 1200 });
     await page.setJavaScriptEnabled(false); // PDF doesn't need JS
-    
+
     return page;
   }
 

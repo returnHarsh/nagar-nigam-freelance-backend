@@ -25,6 +25,8 @@ import FindPropertyIdCustDocument from '../admin/components/FindPropertyIdCustDo
 AdminJS.UserComponents.FindPropertyIdCustDocument = FindPropertyIdCustDocument
 import MultiFileUploader from '../admin/components/MultiFileUploader'
 AdminJS.UserComponents.MultiFileUploader = MultiFileUploader
+import AdminDashboardStats from '../admin/components/AdminDashboardStats'
+AdminJS.UserComponents.AdminDashboardStats = AdminDashboardStats
 import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
 AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
 import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'

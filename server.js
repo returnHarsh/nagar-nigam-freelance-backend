@@ -17,7 +17,7 @@ import s3PresignRoute from "./routes/s3PresignRoute.js";
 
 
 // importing routes
-// import {router as adminDashboardRoutes} from "./routes/adminDashboardRoutes.js"
+import {router as adminDashboardRoutes} from "./routes/adminDashboardRoutes.js"
 // import {router as usersData} from "./routes/usersRoutes.js"
 // import {router as publicRouter} from "./routes/publicRoutes.js"
 
@@ -57,7 +57,7 @@ app.get("/" , (req,res)=>{
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 
-// app.use("/admin-info" , adminDashboardRoutes)
+app.use("/admin-info" , adminDashboardRoutes)
 // app.use("/public" ,publicRouter)
 // app.use("/users-data" , usersData)
 

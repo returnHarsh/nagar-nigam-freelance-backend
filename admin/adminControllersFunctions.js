@@ -215,7 +215,8 @@ export const after_createNewProperty = async (response, request, context) => {
 		try {
 			await generateReciept(propertyDoc, latestTax)
 		} catch (err) {
-			errorLogger(err, "")
+			console.log("❌ ❌ ❌ ❌ ❌ [ERROR] while generating the pdf");
+			// errorLogger(err, "")
 		}
 
 		// =========== Step 4 : Creating and Saving the Log ====================
@@ -397,6 +398,7 @@ export const after_newPaymentHook = async (response, request, context) => {
 		try {
 			await generateReciept(propertyDoc, latestTax)
 		} catch (err) {
+			// console.log("[ERROR] while generating the PDF")
 			errorLogger(err, "")
 		}
 

@@ -8,6 +8,7 @@ import {mapClassifiedProperty} from "../adminFunctions/helper.js"
 import {spawn} from "child_process"
 import { fileURLToPath } from "url";
 import path from "path";
+import { Tax } from "../../models/tax.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const processEachProperty = async(property)=>{
@@ -150,4 +151,55 @@ export function runPythonScript(scriptPath, excelFilePath) {
       reject(new Error(`Python error: ${error.message}`));
     });
   });
+}
+
+
+// ================= This is the function to find out and generate the pdf bill for the property whose bill is not generated yet ===================
+export const generateBulkFaultyPDF = async()=>{
+  try{
+
+    const properties = await Property.find({latestBillUrl : {$exists : false}}).lean();
+
+    // ================== processing the property one by one =========================
+    // for(const property of properties){
+
+    //   const latestTax = await Tax.findById(property?.tax)
+    //   if(!latestTax){
+    //     console.log("Latest Tax for this property is not found.. with _id : " , property?._id)
+    //     continue;
+    //   }
+
+    //   await generateReciept(property , latestTax);
+    // }
+
+    // console.log(`🎉 🎉 Successfully Generated PDFs for ${properties?.length} properties`)
+
+    // return properties?.length
+
+
+
+    // =============== processing property in parallel =======================
+    await Promise.all(properties.map(async(property)=>{
+
+      const latestTax = await Tax.findById(property?.tax)
+      if(!latestTax){
+        console.log("Latest Tax for this property is not found.. with _id : " , property?._id)
+        return undefined;
+      }
+
+      await generateReciept(property , latestTax);
+
+    }))
+
+    console.log(`🎉 🎉 Successfully Generated PDFs for ${properties?.length} properties`)
+    return properties?.length
+
+    
+    
+
+
+
+  }catch(err){
+    console.log("[ERROR] while generating the generateBulkFaultyPDF")
+  }
 }

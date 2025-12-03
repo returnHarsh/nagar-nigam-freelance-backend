@@ -35,7 +35,7 @@ import { generateTaxBillPDF } from "./actions/generateReciept.js";
 import { ARVModification } from "../models/arvModification.js"
 import { bulkUploadNagarNigamData } from "./actions/bulkUploadNagarNigamData.js";
 import { PropertyWardDetail } from "../models/wardDataMapping.js";
-import { processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
+import { generateBulkFaultyPDF, processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
 
@@ -101,11 +101,15 @@ const AdminCustomComponents = {
   MultiFileUploader: componentLoader.add(
     'MultiFileUploader',
     path.resolve(__dirname, './components/MultiFileUploader.jsx')
-  )
+  ),
   // CutomButtonComponent : componentLoader.add(
   //   'CustomPage',
   //   path.resolve(__dirname , "./components/CustomPage.jsx" )
   // )
+  AdminDashboardCustomComp: componentLoader.add(
+    'AdminDashboardStats',
+    path.resolve(__dirname, './components/AdminDashboardStats.jsx')
+  )
 };
 
 
@@ -163,7 +167,7 @@ const adminJs = new AdminJS({
         },
       }
     },
-     {
+    {
       resource: Property,
       options: {
         listProperties: ["PTIN", "houseNumber", "ownerName", "fatherName"],
@@ -173,7 +177,7 @@ const adminJs = new AdminJS({
             after: after_createNewProperty,
           },
           edit: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"  || currentAdmin?.role == "surveyor"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "surveyor"),
             before: before_editNewProperty,
             after: after_editNewProperty,
           },
@@ -300,6 +304,33 @@ const adminJs = new AdminJS({
               }
             },
           },
+          generateFaultyPDF: {
+            actionType: 'resource',
+            component: false,
+            isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+            },
+            handler: async (request, response, context) => {
+              try {
+                const totalProperties = await generateBulkFaultyPDF();
+
+                return {
+                  notice: {
+                    message: `PDF generated successfully for ${totalProperties} Properties ✅`,
+                    type: "success",
+                  },
+                };
+              } catch (err) {
+                console.error("Error in generateFaultyPDF:", err);
+                return {
+                  notice: {
+                    message: "Something went wrong while generating the PDFs.",
+                    type: "error",
+                  },
+                };
+              }
+            },
+          },
 
           importPropertiesWithUI: {
             actionType: 'resource',
@@ -411,7 +442,7 @@ const adminJs = new AdminJS({
             isVisible: false, // show it in the sidebar
             handler: async (request, response, context) => {
               try {
-                const { fileName, fileType, fileData , field } = request.payload;
+                const { fileName, fileType, fileData, field } = request.payload;
 
                 if (!fileData) {
                   throw new Error("No file data provided");
@@ -518,10 +549,10 @@ const adminJs = new AdminJS({
           displayId: { isVisible: false },
           createdAt: { isVisible: false },
           updatedAt: { isVisible: false },
-          receiptWithSign: { isVisible: { edit: false , show : true } },
-          ownerInterviewer: { isVisible: { edit: false , show : true } },
-          IDProof: { isVisible: { edit: false , show : true} },
-          houseFrontWithNamePlate: { isVisible: { edit: false , show : true } },
+          receiptWithSign: { isVisible: { edit: false, show: true } },
+          ownerInterviewer: { isVisible: { edit: false, show: true } },
+          IDProof: { isVisible: { edit: false, show: true } },
+          houseFrontWithNamePlate: { isVisible: { edit: false, show: true } },
 
           // Custom virtual field for uploading
           customUploads: {
@@ -883,7 +914,7 @@ const adminJs = new AdminJS({
           },
         },
         properties: {
-            propertyId : {
+          propertyId: {
             components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
           },
           showDueAmount: {
@@ -1054,8 +1085,8 @@ const adminJs = new AdminJS({
             return `arvModification/${uniqueID}-${Date.now()}-${fileName}`;
           },
           validation: {
-    maxSize: 50 * 1024 * 1024, // 50 MB limit
-  },
+            maxSize: 50 * 1024 * 1024, // 50 MB limit
+          },
           componentLoader
         })
       ],
@@ -1095,7 +1126,7 @@ const adminJs = new AdminJS({
             }
           },
           modificationProof: { isVisible: false },
-          propertyId : {
+          propertyId: {
             components: { edit: AdminCustomComponents.FindPropertyIdCustDocument }
           }
         }
@@ -1106,13 +1137,13 @@ const adminJs = new AdminJS({
       options: {
         navigation: 'Admin Only',
         actions: {
-           actions: {
-          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          edit: { isAccessible: false },
-          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
-        },
+          actions: {
+            new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            edit: { isAccessible: false },
+            list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            delete: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+            show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
+          },
           getWardDetails: {
             actionType: 'record',
             handler: async (request, response, context) => {
@@ -1142,9 +1173,9 @@ const adminJs = new AdminJS({
       }
     },
     {
-      resource : NagarNigamPrerequisite,
-      options : {
-        navigation : "Admin Only",
+      resource: NagarNigamPrerequisite,
+      options: {
+        navigation: "Admin Only",
         actions: {
           new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
           edit: { isAccessible: false },
@@ -1155,7 +1186,7 @@ const adminJs = new AdminJS({
       }
     }
   ],
-   assets: {
+  assets: {
     styles: ['/sidebar.css'],  // 👈 path relative to express.static()
   },
   branding: {
@@ -1190,6 +1221,16 @@ const adminJs = new AdminJS({
   },
   componentLoader,
   dashboard: null,
+    pages : {
+    dashboard : {
+      label : "Dashboard",
+      component : AdminCustomComponents.AdminDashboardCustomComp,
+      isVisible: ({ currentAdmin }) => {
+      return currentAdmin && 
+        (currentAdmin.role === "admin" || currentAdmin.role === "super-admin");
+    }
+    }
+  },
   rootPath: "/karhal/admin",
   loginPath: "/karhal/admin/login",     // 👈 important
   logoutPath: "/karhal/admin/logout",   // 👈 important
@@ -1208,7 +1249,7 @@ const dummyAuthenticate = async (email, password) => {
   console.log("inside the dummy authenticate function")
   return ADMIN_DUMMY;
   return null;
-  
+
 }
 
 const authenticate = async (email, password) => {
@@ -1240,13 +1281,13 @@ const authenticate = async (email, password) => {
 export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
   adminJs,
   {
-      authenticate: authenticate,
-      cookieName: "karhal-adminjs",
-      cookiePassword: "karhal-12345",
-    },
-    null,
-    {
-      resave: false,
-      saveUninitialized: true,
-    }
+    authenticate: authenticate,
+    cookieName: "karhal-adminjs",
+    cookiePassword: "karhal-12345",
+  },
+  null,
+  {
+    resave: false,
+    saveUninitialized: true,
+  }
 );

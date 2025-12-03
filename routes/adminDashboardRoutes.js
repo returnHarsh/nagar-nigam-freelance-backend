@@ -2,7 +2,7 @@
 
 import express from "express"
 import {protect} from "../middlewares/protect.js"
-import { chartStatsData, chartStatsDataInDepth, getDashboardStats, getLatestSurveyActivities, getSurveyorDataForRecord, getUserData, login } from "../controllers/adminDashboardController.js";
+import { chartStatsData, chartStatsDataInDepth, getDashboardStats, getLatestSurveyActivities, getSurveyorDataForRecord, getTotalWardDetails, getUserData, login } from "../controllers/adminDashboardController.js";
 
 export const router = express.Router();
 
@@ -20,3 +20,4 @@ router.post("/stats" , getDashboardStats)
 router.post("/user-view" , getUserData)
 router.post("/graph-stats" , chartStatsData)
 router.post("/graph-stats-detail" , chartStatsDataInDepth)
+router.get("/ward-details" , getTotalWardDetails)

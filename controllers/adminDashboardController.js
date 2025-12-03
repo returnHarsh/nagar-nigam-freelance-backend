@@ -1,9 +1,11 @@
 import bcrypt from "bcrypt";
-import { Property } from "../models/formModelV2.js";
-import { ActivityLogs } from "../models/activityLogSchema.js";
-import User from "../models/userModel.js";
+import { Property } from "../models/property.js";
+import { AuditLog } from "../models/auditLog.js";
+import { User } from "../models/user.js";
 import { generateAndSendToken } from "../auth/authUtils.js";
 import { getDayRange } from "../utils/dateUtils.js";
+import { Tax } from "../models/tax.js";
+import { PropertyWardDetail } from "../models/wardDataMapping.js";
 
 const dashboardStats = async () => {
   const total = await Property.countDocuments({});
@@ -526,35 +528,36 @@ const countPropertiesUsingAggregation = async () => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const properties = await Property.find({})
-      .select("floorsData.floors.classification -_id")
-      .lean();
+    const {wardNumber} = req.body
+    console.log("================== ward Number : " , wardNumber , " ===============")
+    const propertyQuery = {}
 
-    const totalProperties = properties.length;
+    if(wardNumber){
+      propertyQuery.wardNumber = wardNumber
+    }
 
-    let residentialCount = 0;
-    let commercialCount = 0;
-    let mixedCount = 0;
+    const properties = await Property.find(propertyQuery).lean();
 
-    // Extract just the classifications per property
-    const propertyClassifications = properties.map(
-      (property) =>
-        property.floorsData?.floors?.map((floor) => floor.classification) || []
-    );
+    const propertyIds = properties.map(p=> p?._id)
 
-    // Classify each property
-    propertyClassifications.forEach((classifications) => {
-      const hasResidential = classifications.includes("residential");
-      const hasCommercial = classifications.includes("commercial");
+    const propertyDistribution = {
+      residential: [],
+      commercial: [],
+      mixed: []
+    };
 
-      if (hasResidential && hasCommercial) {
-        mixedCount += 1;
-      } else if (hasCommercial) {
-        commercialCount += 1;
-      } else if (hasResidential) {
-        residentialCount += 1;
+    properties.forEach(p => {
+      const propertyClass = p?.propertyClass?.toLowerCase();
+
+      if (propertyDistribution[propertyClass]) {
+        propertyDistribution[propertyClass].push(p);
+      } else {
+        console.log("Unknown property class:", propertyClass, "for property:", p._id);
       }
     });
+
+    // Extract just the classifications per property
+
 
     // Survey stats
     const surveyStats = (
@@ -629,51 +632,66 @@ export const getDashboardStats = async (req, res) => {
     };
 
     // here we are calculating the tax stats
-    const tax = await Property.aggregate([
+    const taxes = await Tax.aggregate([
+      {
+        $match : {
+          propertyId : {$in : propertyIds}
+        }
+      },
+      {
+        $sort: {
+          createdAt: -1
+        }
+      },
       {
         $group: {
-          _id: null,
-          totalTaxSum: {
-            $sum: {
-              $convert: {
-                input: "$totalTax",
-                to: "double",
-                onError: 0, // if value is NaN or string
-                onNull: 0, // if value is null
-              },
-            },
-          },
-          // totalTaxPaidSum: {
-          //   $sum: {
-          //     $convert: {
-          //       input: "$totalTaxPaid",
-          //       to: "double",
-          //       onError: 0,
-          //       onNull: 0,
-          //     },
-          //   },
-          // },
-        },
+          _id: "$propertyId",
+          latestDoc: { $first: "$$ROOT" }
+        }
       },
+      {
+        $replaceRoot: { newRoot: "$latestDoc" }
+      }
     ]);
 
-    console.log("tax is : " , tax)
+    const taxInfo = {
+      interestRate : 0,
+      totalTax : 0,
+      dueTaxAmount : 0,
+      totalARV : 0,
+      totalAmountPaid : 0,
+      totalBakaya : 0,
+      totalTaxWithoutBakaya : 0,
+      totalInterestAmountOnBakaya : 0,
+      taxStatus : {
+        pending : 0,
+        partial : 0,
+        paid : 0
+      }
+    }
 
-    const taxStats = {
-      totalTax: tax[0]?.totalTaxSum || 0,
-      totalTaxPaid: tax[0]?.totalTaxPaidSum || 0,
-    };
+    taxInfo.interestRate = taxes[0]?.interestRate
 
-    taxStats["totalTaxLeft"] = taxStats.totalTax - taxStats.totalTaxPaid;
+    taxes.forEach(tax=>{
+      taxInfo.totalTax += tax.totalTax,
+      taxInfo.dueTaxAmount += tax.dueAmount,
+      taxInfo.totalARV += tax.arv,
+      taxInfo.totalAmountPaid += tax.paidAmount,
+      taxInfo.totalInterestAmountOnBakaya += tax.interestAmountOnBakaya,
+      taxInfo.totalTaxWithoutBakaya += tax.taxWithoutBakaya
+      taxInfo.taxStatus[tax.taxStatus?.toLowerCase()] += 1
+      taxInfo.totalBakaya += tax.bakaya
+    })
+
 
     const stats = {
-      totalProperties,
-      totalResidentialProperty: residentialCount,
-      totalCommercialProperty: commercialCount,
-      totalMixedProperty: mixedCount,
+      totalProperties: properties?.length,
+      totalResidentialProperty: propertyDistribution.residential?.length,
+      totalCommercialProperty: propertyDistribution.commercial?.length,
+      totalMixedProperty: propertyDistribution.mixed?.length,
       surveyStats,
       verificationStats,
-      taxStats,
+      taxStats: taxInfo,
     };
 
     return res.status(200).json({ success: true, data: stats });
@@ -684,6 +702,17 @@ export const getDashboardStats = async (req, res) => {
       .json({ success: false, message: "Something went wrong" });
   }
 };
+
+export const getTotalWardDetails = async(req,res)=>{
+  try{
+
+    const wardDetails = await PropertyWardDetail.find({}).lean();
+    return res.status(200).json({message : "found all wards" , data : wardDetails})
+
+  }catch(err){
+    console.log("[ERROR] in getTotalWardDetails : " , err.message)
+  }
+}
 
 export const chartStatsDataInDepth = async (req, res) => {
   try {
@@ -1014,7 +1043,7 @@ export const chartStatsData = async (req, res) => {
     });
   } catch (err) {
     console.log("[ERROR] in chartStatsData : ", err.message);
-    return res.status(500).json({success : false , message : err.message})
+    return res.status(500).json({ success: false, message: err.message })
   }
 };
 
@@ -1050,6 +1079,7 @@ export const getSurveyorDataForRecord = async (req, res) => {
         isSurveyVerified: doc.isSurveyVerified,
         address: doc.address,
         ward: doc.ward,
+        wardNumber: doc.wardNumber,
         houseNumber: doc.houseNumber,
         surveyDate: doc.createdAt,
       };
@@ -1066,8 +1096,8 @@ export const getSurveyorDataForRecord = async (req, res) => {
       data: { surveyDoneByToday, surveyors },
     });
   } catch (err) {
-    console.log("[ERROR] in getSurveyorDataForRecord : " , err.message);
-    return res.status(500).json({success : false , message : getSurveyorDataForRecord })
+    console.log("[ERROR] in getSurveyorDataForRecord : ", err.message);
+    return res.status(500).json({ success: false, message: getSurveyorDataForRecord })
   }
 };
 
@@ -1077,8 +1107,9 @@ export const getLatestSurveyActivities = async (req, res) => {
 
     if (selected === "activities") {
       console.log("user selected the activities section");
-      const activities = await ActivityLogs.find({})
-        .select("-performedBy.id")
+      const activities = await AuditLog.find({})
+        .populate("actor")
+        .select("-actor.id")
         .sort({ createdAt: -1 })
         .limit(limit)
         .lean();
@@ -1091,7 +1122,7 @@ export const getLatestSurveyActivities = async (req, res) => {
 
     const recentPropertiesAdded = await Property.find({})
       .select(
-        "houseNumber interviewerName ward locality createdAt isSurveyVerified"
+        "houseNumber interviewerName ward wardNumber locality createdAt isSurveyVerified"
       )
       .populate("surveyor", "name email isSurveyorActive")
       .sort({ createdAt: -1 })
@@ -1116,13 +1147,31 @@ export const getLatestSurveyActivities = async (req, res) => {
 
 export const getTotalPropertiesByCategory = async (req, res) => {
   try {
-    const properties = await Property.find({}).select("floorsDate totalTax");
+    const properties = await Property.find({}).lean();
 
-    const residentialProperties = [],
-      commercialProperties = [],
-      mixedProperties = [];
+    const propertyDistribution = {
+      residential: [],
+      commercial: [],
+      mixed: []
+    };
+
+    properties.forEach(p => {
+      const propertyClass = p?.propertyClass?.toLowerCase();
+
+      if (propertyDistribution[propertyClass]) {
+        propertyDistribution[propertyClass].push(p);
+      } else {
+        console.log("Unknown property class:", propertyClass, "for property:", p._id);
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: propertyDistribution
+    });
+
   } catch (err) {
-    return res.status(500).json({success : false , message : err.message})
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -1161,8 +1210,8 @@ export const getUserData = async (req, res) => {
       .status(201)
       .json({ success: true, message: "Fetched Properties!!", userData });
   } catch (err) {
-    console.log("[ERROR] in getUserData : " , err.message);
-    return res.status(500).json({success : false , message : err.message})
+    console.log("[ERROR] in getUserData : ", err.message);
+    return res.status(500).json({ success: false, message: err.message })
   }
 };
 

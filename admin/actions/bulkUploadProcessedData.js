@@ -8,6 +8,7 @@ import {mapClassifiedProperty} from "../adminFunctions/helper.js"
 import {spawn} from "child_process"
 import { fileURLToPath } from "url";
 import path from "path";
+import { Tax } from "../../models/tax.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const processEachProperty = async(property)=>{
@@ -101,7 +102,6 @@ export function runPythonScript(scriptPath, excelFilePath) {
 
 	const venvPythonPath = path.resolve("scripts/.venv/bin/python")
     // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'barnal']);
-    // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'testing']);
     const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'karhal']);
     
     let stdout = '';
@@ -147,26 +147,59 @@ export function runPythonScript(scriptPath, excelFilePath) {
       }
     });
 
-//   python.on('close', async (code) => {
-//   console.log("Script closed");
-
-//   if (code !== 0) {
-//     reject(new Error(`Script failed: ${stderr}`));
-//   } else {
-//     try {
-//       await uploadBulkData(); // ✅ now you can await it safely
-//       resolve({
-//         message: `Imported ${stats.insertedCount} properties (${stats.duplicatesSkipped} duplicates)`,
-//         ...stats,
-//       });
-//     } catch (err) {
-//       reject(err);
-//     }
-//   }
-// });
-
     python.on('error', (error) => {
       reject(new Error(`Python error: ${error.message}`));
     });
   });
+}
+
+
+// ================= This is the function to find out and generate the pdf bill for the property whose bill is not generated yet ===================
+export const generateBulkFaultyPDF = async()=>{
+  try{
+
+    const properties = await Property.find({latestBillUrl : {$exists : false}}).lean();
+
+    // ================== processing the property one by one =========================
+    // for(const property of properties){
+
+    //   const latestTax = await Tax.findById(property?.tax)
+    //   if(!latestTax){
+    //     console.log("Latest Tax for this property is not found.. with _id : " , property?._id)
+    //     continue;
+    //   }
+
+    //   await generateReciept(property , latestTax);
+    // }
+
+    // console.log(`🎉 🎉 Successfully Generated PDFs for ${properties?.length} properties`)
+
+    // return properties?.length
+
+
+
+    // =============== processing property in parallel =======================
+    await Promise.all(properties.map(async(property)=>{
+
+      const latestTax = await Tax.findById(property?.tax)
+      if(!latestTax){
+        console.log("Latest Tax for this property is not found.. with _id : " , property?._id)
+        return undefined;
+      }
+
+      await generateReciept(property , latestTax);
+
+    }))
+
+    console.log(`🎉 🎉 Successfully Generated PDFs for ${properties?.length} properties`)
+    return properties?.length
+
+    
+    
+
+
+
+  }catch(err){
+    console.log("[ERROR] while generating the generateBulkFaultyPDF")
+  }
 }

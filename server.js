@@ -14,7 +14,7 @@ import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
 
 
 // importing routes
-// import {router as adminDashboardRoutes} from "./routes/adminDashboardRoutes.js"
+import {router as adminDashboardRoutes} from "./routes/adminDashboardRoutes.js"
 // import {router as usersData} from "./routes/usersRoutes.js"
 // import {router as publicRouter} from "./routes/publicRoutes.js"
 
@@ -43,8 +43,8 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 KarhalRouter.use("/admin" , adminRouter)
 
 // =============== Body parser middleware ================
-// app.use(express.json({ limit: '50mb' }));
-// app.use(express.urlencoded({ limit: '5mb', extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 
 // ============ Route to handle adminjs internal functions ================
@@ -58,7 +58,7 @@ KarhalRouter.get("/" , (req,res)=>{
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 
-// KarhalRouter.use("/admin-info" , adminDashboardRoutes)
+KarhalRouter.use("/admin-info" , adminDashboardRoutes)
 // KarhalRouter.use("/public" ,publicRouter)
 // KarhalRouter.use("/users-data" , usersData)
 

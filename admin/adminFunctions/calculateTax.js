@@ -381,7 +381,7 @@ export const calculateTax = async (floorsData, roadType, constructionType, prope
 		// 	commercialMultiplier = 3;
 		// }
 
-		// =============== now for karhal the commercialMultiplier should be hardcoded to 3 ===================
+		// =============== now for bewar the commercialMultiplier should be hardcoded to 3 ===================
 		const commercialMultiplier = 3;
 
 		// Step 4: Calculate ARV

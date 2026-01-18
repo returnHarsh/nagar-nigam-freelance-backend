@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ApiClient } from 'adminjs';
+import axios from 'axios';
 
 const api = new ApiClient();
 
@@ -16,16 +17,22 @@ const FindPropertyIdCustDocument = (props) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/admin-internals/get-property-id', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ PTIN: ptin }), // changed to PTIN
-      });
+      // const res = await fetch('/admin-internals/get-property-id', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ PTIN: ptin }), // changed to PTIN
+      // });
 
-      let data = await res.json();
-      data = data?.data;
+       const res = (await axios({
+        url : "https://api.npup.in/bewar/admin-internals/get-property-id",
+        method : "post",
+        data : {PTIN : ptin}
+      })).data
+
+      // let data = await res.json();
+      let data = res?.data;
 
       if (!data?.propertyId) {
         setDetails(null);

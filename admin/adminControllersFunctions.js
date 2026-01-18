@@ -15,6 +15,7 @@ import mongoose from "mongoose";
 import Surveyor from "../models/surveyor.js";
 import { NagarNigamProperty } from "../models/nagarNigamProperty.js";
 import { Tax } from "../models/tax.js";
+import { flagPropertyForReceiptGen } from "../utils/flagProperty.js";
 
 
 const isSubmitClickedOnEdit = (doc) => {
@@ -215,7 +216,9 @@ export const after_createNewProperty = async (response, request, context) => {
 		try {
 			await generateReciept(propertyDoc, latestTax)
 		} catch (err) {
-			errorLogger(err, "")
+			flagPropertyForReceiptGen(propertyDoc)
+			console.log("Error while generating PDF for propertyId : " , propertyDoc?._id , " error is : " , err.message)
+			// errorLogger(err, "")
 		}
 
 		// =========== Step 4 : Creating and Saving the Log ====================
@@ -341,7 +344,9 @@ export const after_editNewProperty = async (response, request, context) => {
 			try {
 			await generateReciept(newDoc, latestTax)
 		} catch (err) {
-			errorLogger(err, "")
+			// errorLogger(err, "")
+			flagPropertyForReceiptGen(newDoc)
+			console.log("Error while generating the pdf on propertyId : " , newDoc?._id , "with error : " , err.message)
 		}
 		}
 
@@ -394,7 +399,8 @@ export const after_newPaymentHook = async (response, request, context) => {
 		try {
 			await generateReciept(propertyDoc, latestTax)
 		} catch (err) {
-			errorLogger(err, "")
+			flagPropertyForReceiptGen(propertyDoc)
+			// errorLogger(err, "")
 		}
 
 		// audit the log of payment modification
@@ -441,7 +447,7 @@ export const after_newARVModificationHook = async(response , request , context)=
 
 		// ================= Step 3 : get newARV and calculate newTotalTax = (tax + bakaya) ============
 		const newARV = changedARVDoc?.newArv;
-		const newTotalTax = calculateTaxes(newARV)?.totalTax + bakaya;
+		const newTotalTax = calculateTaxes(newARV)?.totalTax + bakaya + prevTax?.interestAmountOnBakaya;
 		console.log("Bakaya is : " , bakaya)
 
 		// ================= Step 4 : creating a new tax document =======================
@@ -457,7 +463,9 @@ export const after_newARVModificationHook = async(response , request , context)=
 			dueDate : prevTax?.dueDate,
 			history : prevTax?.history,
 			prevTaxPointer : prevTax?._id,
-			taxWithoutBakaya : prevTax?.taxWithoutBakaya
+			taxWithoutBakaya : prevTax?.taxWithoutBakaya,
+			interestAmountOnBakaya : prevTax?.interestAmountOnBakaya,
+			interestRate : prevTax?.interestRate
 		})
 
 		const changeHistoryDoc = await changeHistoryAction(prevTax , tax.toObject() , "ARV" , changedARVDoc?._id  , currentUser?._id)
@@ -466,7 +474,8 @@ export const after_newARVModificationHook = async(response , request , context)=
 		try {
 			await generateReciept(propertyDoc, tax)
 		} catch (err) {
-			errorLogger(err, "")
+			flagPropertyForReceiptGen(propertyDoc)
+			// errorLogger(err, "")
 		}
 
 		await logAuditAction(changeHistoryDoc?._id , currentUser?._id , "ARV MODIFICATION" , "ARV" , changedARVDoc?._id)

@@ -3,7 +3,7 @@ import { errorLogger } from "../utils/errorLogger.js";
 export const gateKeeper = async (req, res, next) => {
   try {
 	console.log("🧿 🧿 🧿 🧿 🧿 inside the main gateKeeper")
-    const host = req.headers.host; // e.g. karhal.api.npup.in or npup.in
+    const host = req.headers.host; // e.g. bewar.api.npup.in or npup.in
     const fullURL = req.protocol + "://" + req.get("host") + req.originalUrl;
 
     // ======== Extracting the first subdomain name ===========
@@ -13,9 +13,9 @@ export const gateKeeper = async (req, res, next) => {
     const parts = cleanHost.split(".");
 
     // Example:
-    // parts = ['karhal', 'api', 'npup', 'in']
+    // parts = ['bewar', 'api', 'npup', 'in']
     // If the length > 2, then we have at least one subdomain
-    const subdomain = parts.length > 2 ? parts[0] : null; // 'karhal' in example, null if npup.in
+    const subdomain = parts.length > 2 ? parts[0] : null; // 'bewar' in example, null if npup.in
 
     console.log("Full URL:", fullURL);
     console.log("Host:", host);

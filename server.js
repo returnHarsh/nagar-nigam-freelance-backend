@@ -24,8 +24,8 @@ const app = express();
 // ========== Serving static files like css file ====================
 app.use(express.static("public"));
 
-// ============== Main Karhal Router ======================
-const KarhalRouter = express.Router();
+// ============== Main Bewar Router ======================
+const BewarRouter = express.Router();
 
 // configuring the cors middleware , allowing my registered frontend to talk to this backend
 app.use(cors({
@@ -40,32 +40,32 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 // app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // ================= Main AdminJs Route ===================
-KarhalRouter.use("/admin" , adminRouter)
+BewarRouter.use("/admin" , adminRouter)
 
 // =============== Body parser middleware ================
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '5mb', extended: true }));
+// app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 // ============ Route to handle adminjs internal functions ================
-KarhalRouter.use("/admin-internals" , interalAdminRoutes)
+BewarRouter.use("/admin-internals" , interalAdminRoutes)
 
 
 // ============ Health check and default route ===============
-KarhalRouter.get("/" , (req,res)=>{
+BewarRouter.get("/" , (req,res)=>{
 	console.log("Host Header : " , req.headers.host)
 	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 
-KarhalRouter.use("/admin-info" , adminDashboardRoutes)
-// KarhalRouter.use("/public" ,publicRouter)
-// KarhalRouter.use("/users-data" , usersData)
+BewarRouter.use("/admin-info" , adminDashboardRoutes)
+// BewarRouter.use("/public" ,publicRouter)
+// BewarRouter.use("/users-data" , usersData)
 
 
 
-// ============== Now all the request goes through /karhal =============
-app.use("/karhal" , KarhalRouter)
+// ============== Now all the request goes through /bewar =============
+app.use("/bewar" , BewarRouter)
 
 
 // ============== Global Error middleware , must be placed in last ==============

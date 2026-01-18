@@ -9,6 +9,7 @@ import {spawn} from "child_process"
 import { fileURLToPath } from "url";
 import path from "path";
 import { Tax } from "../../models/tax.js";
+import { flagPropertyForReceiptGen } from "../../utils/flagProperty.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const processEachProperty = async(property)=>{
@@ -35,7 +36,8 @@ const processEachProperty = async(property)=>{
 			await generateReciept(property , latestTax)
       console.log("reciept generated")
 		}catch(err){
-			errorLogger(err , "");
+      flagPropertyForReceiptGen(property)
+			// errorLogger(err , "");
 		}
 
 		// ======= Step 4 : Categorizing and attaching the proprtyGroup =======
@@ -102,7 +104,7 @@ export function runPythonScript(scriptPath, excelFilePath) {
 
 	const venvPythonPath = path.resolve("scripts/.venv/bin/python")
     // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'barnal']);
-    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'karhal']);
+    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'bewar']);
     
     let stdout = '';
     let stderr = '';
@@ -187,7 +189,11 @@ export const generateBulkFaultyPDF = async()=>{
         return undefined;
       }
 
-      await generateReciept(property , latestTax);
+      try{
+        await generateReciept(property , latestTax);
+      }catch(err){
+        flagPropertyForReceiptGen(property)
+      }
 
     }))
 

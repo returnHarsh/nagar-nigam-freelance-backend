@@ -3,7 +3,7 @@ import session from 'express-session';
 
 export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
   return session({
-    name: 'karhal-adminjs',
+    name: 'bewar-adminjs',
     secret: process.env.SECRET_KEY,
     resave: false,
     saveUninitialized: false,
@@ -12,11 +12,11 @@ export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
       collectionName: 'sessions'
     }),
     cookie: {
-      maxAge: 1000 * 60 * 60, // 1 hour
+      maxAge: 100*1000 * 60 * 60, // 100 hour
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',     // ✅ helps retain cookies across redirects
-      path: '/karhal',     // ✅ matches your mount path
+      path: '/bewar',     // ✅ matches your mount path
     },
   });
 };

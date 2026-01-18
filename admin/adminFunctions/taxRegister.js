@@ -79,11 +79,19 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
 
         if (prevTax) {
             console.log("PREVIOUS TAX FOUND!!")
+
+            const preNagarNigamData = await NagarNigamProperty.findOne({houseNumber : property.houseNumber , ward : property.ward }).session(session)
+            console.log("NAGAR NIGAM DATA : " , preNagarNigamData);
+            const bakaya = isNaN(Number(preNagarNigamData?.prevTax)) ? 0 : Number(preNagarNigamData?.prevTax)
+            const interestRate = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}))?.interestRateOnBakaya || 0;
+            console.log("Interest Rate is : " , interestRate )
+            const interestAmountOnBakaya =   ((bakaya * interestRate) / 100)
+
             const tax = new Tax({
                 propertyId : prevTax?.propertyId,
                 arv : totalArv,
-                totalTax : totalTax,
-                bakaya : prevTax?.bakaya,
+                totalTax : (totalTax + bakaya + interestAmountOnBakaya),
+                bakaya : bakaya,
                 taxStatus : prevTax?.taxStatus,
                 paidAmount : prevTax?.paidAmount,
                 taxBreakdown : taxDetail,
@@ -91,9 +99,9 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
                 dueDate : prevTax?.dueDate,
                 history : prevTax?.history,
                 prevTaxPointer : prevTax?._id,
-                taxWithoutBakaya : prevTax?.taxWithoutBakaya,
-                interestAmountOnBakaya : prevTax?.interestAmountOnBakaya,
-                interestRate : prevTax?.interestRate
+                taxWithoutBakaya : totalTax,
+                interestAmountOnBakaya : interestAmountOnBakaya,
+                interestRate : interestRate
             })
             console.log("NEW TAX SAVED IS : " , tax)
 
@@ -109,14 +117,12 @@ export const createTaxModel = async (taxDetail, property , arv , session) => {
 
             // ========== fetching the data we got from nagar nigam ===================
             // const preNagarNigamData = await NagarNigamProperty.findOne({ownerName : property.ownerName , fatherName : property.fatherName , houseNumber : property.houseNumber}).session(session)
-            console.log("houseNumber is : " , property.houseNumber);
-            console.log("ward is : " , property.ward);
             const preNagarNigamData = await NagarNigamProperty.findOne({houseNumber : property.houseNumber , ward : property.ward }).session(session)
             console.log("NAGAR NIGAM DATA : " , preNagarNigamData);
             const bakaya = isNaN(Number(preNagarNigamData?.prevTax)) ? 0 : Number(preNagarNigamData?.prevTax)
             const interestRate = (await NagarNigamPrerequisite.findOne({}).sort({createdAt : -1}))?.interestRateOnBakaya || 0;
-            console.log("Interest Rate is : " , interestRate)
-            const interestAmountOnBakaya =   Math.round((bakaya * interestRate) / 100)
+            console.log("Interest Rate is : " , interestRate )
+            const interestAmountOnBakaya =   ((bakaya * interestRate) / 100)
             
 
             console.log("bakaya during tax calculation is : " , bakaya)

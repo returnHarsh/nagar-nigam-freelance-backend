@@ -10,9 +10,9 @@ const AdminDashboardStats = () => {
   const fetchStats = async (wardNumber) => {
     try {
       const res = await axios({
-        url: `https://api.npup.in/karhal/admin-info/stats`,
-        method: "post",
-        data: { wardNumber: wardNumber }
+        url: `https://api.npup.in/bewar/admin-info/stats/?wardNumber=${wardNumber}`,
+        method: "get",
+        // data: { wardNumber: wardNumber }
       });
 
       console.log("stats are:", res.data.data);
@@ -25,7 +25,7 @@ const AdminDashboardStats = () => {
   const fetchWardDetails = async () => {
     try {
       const res = (await axios({
-        url: "https://api.npup.in/karhal/admin-info/ward-details",
+        url: "https://api.npup.in/bewar/admin-info/ward-details",
         method: "get"
       })).data;
 

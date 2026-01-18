@@ -528,12 +528,12 @@ const countPropertiesUsingAggregation = async () => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const {wardNumber} = req.body
+    const {wardNumber} = req.query
     console.log("================== ward Number : " , wardNumber , " ===============")
     const propertyQuery = {}
 
     if(wardNumber){
-      propertyQuery.wardNumber = wardNumber
+      propertyQuery.wardNumber = wardNumber?.toString()?.trim()
     }
 
     const properties = await Property.find(propertyQuery).lean();

@@ -2,6 +2,7 @@ import mongoose, { set } from "mongoose";
 import {PropertyType , ConstructionType , RoadWidthType} from "../data/constants.js"
 import { customAlphabet } from "nanoid"
 import { errorLogger } from "../utils/errorLogger.js";
+import { NagarNigamPrerequisite } from "./NagarNigamPrerequisite.js";
 
 // ---------------- Floor Schema ----------------
 const floorSchema = new mongoose.Schema({
@@ -165,7 +166,11 @@ propertySchema.pre('save', async function(next) {
   try {
     // Only generate PPIN for new documents
     if (this.isNew && !this.PTIN) {
-      this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
+      // this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
+      const nagarNigamPrerequisite = (await NagarNigamPrerequisite.find({}).lean())[0]
+      const districtCode = nagarNigamPrerequisite.districtCode
+      this.PTIN = `UP${districtCode}${generateNumericId()}`;
+      // this.PTIN = `UP${this.districtCode}${generateNumericId()}`;
     }
     if(this.isNew && !this.demandNumber){
       const count = await mongoose.model('Property').countDocuments();

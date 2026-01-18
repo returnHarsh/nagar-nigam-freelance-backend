@@ -178,6 +178,120 @@ const HouseNumberInput = ({ property, record, onChange }) => {
     }
   }, [record?.params, property.path, property.name]);
 
+  // const fetchHouseData = async (houseNumber) => {
+  //   if(!ward){
+  //     setMessage({ text: 'Please Enter Ward to search the House Number', type: 'error' });
+  //     return;
+  //   }
+  //   if (!houseNumber || houseNumber.trim() === '') {
+  //     // setMessage({ text: 'Please enter a house number and ward', type: 'error' });
+  //     // setMessage({ text: 'No records available for this house number or ward , setting the houseNumber to New', type: 'error' });
+  //     setMessage({ text: 'Please Enter a House Number', type: 'error' });
+  //     // onChange('houseNumber' , "New")
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     setMessage(null);
+
+  //     console.log('Searching for house number:', houseNumber);
+
+  //     const searchValue = houseNumber.trim();
+  //     let foundData = null;
+  //     let page = 1;
+  //     const perPage = 500;
+
+  //     // Search through pages until we find the house number
+  //     while (!foundData) {
+  //       const res = await api.resourceAction({
+  //         resourceId: "NagarNigamProperty",
+  //         actionName: "list",
+  //         params: {
+  //           page,
+  //           perPage
+  //         }
+  //       });
+
+  //       const records = res.data?.records || [];
+        
+  //       if (records.length === 0) {
+  //         // No more records to search
+  //         break;
+  //       }
+
+  //       // Search for exact match in current page
+  //       const matchingRecord = records.find(r => 
+  //         (r.params.houseNumber === searchValue && ward)
+  //       );
+
+  //       if (matchingRecord) {
+  //         foundData = matchingRecord.params;
+  //         break;
+  //       }
+
+  //       // If we got less than perPage, we've reached the end
+  //       if (records.length < perPage) {
+  //         break;
+  //       }
+
+  //       page++;
+  //     }
+
+  //     if (!foundData) {
+  //       setMessage({ 
+  //         text: `No data found for house number: ${houseNumber}`, 
+  //         type: 'error' 
+  //       });
+  //       onChange('houseNumber' , "New")
+  //       return;
+  //     }
+
+  //     console.log('Found house data:', foundData);
+
+  //     // Update house number
+  //     onChange(property.path || property.name, foundData.houseNumber);
+
+  //     // Auto-fill other fields
+  //     setTimeout(() => {
+  //       if (foundData.ownerName) {
+  //         onChange('ownerName', foundData.ownerName);
+  //       }
+  //       if (foundData.fatherName) {
+  //         onChange('fatherName', foundData.fatherName);
+  //       }
+  //       if (foundData.prevTax !== undefined) {
+  //         onChange('prevTax', foundData.prevTax);
+  //       }
+  //       if (foundData.PTIN) {
+  //         onChange('PTIN', foundData.PTIN);
+  //       }
+  //       if(foundData?.war){
+  //         onChange('ward' , foundData.ward)
+  //       }
+  //       if(foundData?.wardNumber){
+  //         onChange('wardNumber' , foundData?.wardNumber)
+  //       }
+
+  //     }, 0);
+
+  //     setMessage({ 
+  //       text: 'Data loaded successfully!', 
+  //       type: 'success' 
+  //     });
+
+  //   } catch (err) {
+  //     console.error('[ERROR] in fetchHouseData:', err.message);
+  //     setMessage({ 
+  //       text: `Error: ${err.message}`, 
+  //       type: 'error' 
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  
+  
   const fetchHouseData = async (houseNumber) => {
     if(!ward){
       setMessage({ text: 'Please Enter Ward to search the House Number', type: 'error' });
@@ -197,48 +311,23 @@ const HouseNumberInput = ({ property, record, onChange }) => {
 
       console.log('Searching for house number:', houseNumber);
 
-      const searchValue = houseNumber.trim();
-      let foundData = null;
-      let page = 1;
-      const perPage = 500;
+      const response = await api.resourceAction({
+            resourceId: "NagarNigamProperty",
+            actionName: "fetchHouseNumberBasedOnWard",
+            method: "get",        // IMPORTANT
+            params: {
+              ward,
+              houseNumber
+            },
+      });
 
-      // Search through pages until we find the house number
-      while (!foundData) {
-        const res = await api.resourceAction({
-          resourceId: "NagarNigamProperty",
-          actionName: "list",
-          params: {
-            page,
-            perPage
-          }
-        });
+      const previousData = response.data?.data
+      console.log("previous data is : " , previousData)
 
-        const records = res.data?.records || [];
-        
-        if (records.length === 0) {
-          // No more records to search
-          break;
-        }
 
-        // Search for exact match in current page
-        const matchingRecord = records.find(r => 
-          (r.params.houseNumber === searchValue && ward)
-        );
 
-        if (matchingRecord) {
-          foundData = matchingRecord.params;
-          break;
-        }
 
-        // If we got less than perPage, we've reached the end
-        if (records.length < perPage) {
-          break;
-        }
-
-        page++;
-      }
-
-      if (!foundData) {
+      if (!previousData) {
         setMessage({ 
           text: `No data found for house number: ${houseNumber}`, 
           type: 'error' 
@@ -247,31 +336,33 @@ const HouseNumberInput = ({ property, record, onChange }) => {
         return;
       }
 
-      console.log('Found house data:', foundData);
+      console.log('Found house data:', previousData);
 
       // Update house number
-      onChange(property.path || property.name, foundData.houseNumber);
+      onChange(property.path || property.name, previousData.houseNumber);
 
       // Auto-fill other fields
       setTimeout(() => {
-        if (foundData.ownerName) {
-          onChange('ownerName', foundData.ownerName);
+        if (previousData.ownerName) {
+          console.log("updating the owner name")
+          onChange('ownerName', previousData.ownerName);
         }
-        if (foundData.fatherName) {
-          onChange('fatherName', foundData.fatherName);
+        if (previousData.fatherName) {
+          console.log("updating the father name")
+          onChange('fatherName', previousData.fatherName);
         }
-        if (foundData.prevTax !== undefined) {
-          onChange('prevTax', foundData.prevTax);
-        }
-        if (foundData.PTIN) {
-          onChange('PTIN', foundData.PTIN);
-        }
-        if(foundData?.war){
-          onChange('ward' , foundData.ward)
-        }
-        if(foundData?.wardNumber){
-          onChange('wardNumber' , foundData?.wardNumber)
-        }
+        // if (previousData.prevTax !== undefined) {
+        //   onChange('prevTax', previousData.prevTax);
+        // }
+        // if (previousData.PTIN) {
+        //   onChange('PTIN', previousData.PTIN);
+        // }
+        // if(previousData?.ward){
+        //   onChange('ward' , previousData.ward)
+        // }
+        // if(previousData?.wardNumber){
+        //   onChange('wardNumber' , previousData?.wardNumber)
+        // }
 
       }, 0);
 

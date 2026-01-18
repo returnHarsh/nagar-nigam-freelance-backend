@@ -27,6 +27,10 @@ import MultiFileUploader from '../admin/components/MultiFileUploader'
 AdminJS.UserComponents.MultiFileUploader = MultiFileUploader
 import AdminDashboardStats from '../admin/components/AdminDashboardStats'
 AdminJS.UserComponents.AdminDashboardStats = AdminDashboardStats
+import MutationComp from '../admin/components/MutationComp'
+AdminJS.UserComponents.MutationComp = MutationComp
+import ExcelDownloadProperty from '../admin/components/ExcelDownloadProperty'
+AdminJS.UserComponents.ExcelDownloadProperty = ExcelDownloadProperty
 import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
 AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
 import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'

@@ -38,6 +38,8 @@ import { PropertyWardDetail } from "../models/wardDataMapping.js";
 import { generateBulkFaultyPDF, processSingleProperty, runPythonScript, uploadBulkData } from "./actions/bulkUploadProcessedData.js";
 import { generateAndDownloadBulkBill } from "./actions/generateAndDownloadBulkBill.js";
 import { NagarNigamPrerequisite } from "../models/NagarNigamPrerequisite.js";
+import { parseMutatedFieldsSafe } from "./adminFunctions/parseMutatedFields.js";
+import { Mutation } from "../models/mutation.js";
 
 // lets create the uploads folder is it doens'nt exist
 const isUploadDir = path.join(process.cwd(), "uploads");
@@ -109,6 +111,13 @@ const AdminCustomComponents = {
   AdminDashboardCustomComp: componentLoader.add(
     'AdminDashboardStats',
     path.resolve(__dirname, './components/AdminDashboardStats.jsx')
+  ),
+    MutationComp: componentLoader.add(
+    'MutationComp',
+    path.resolve(__dirname, './components/MutationComp.jsx')
+  ),
+  ExcelDownloadProperty : componentLoader.add(
+    'ExcelDownloadProperty' , path.resolve(__dirname , './components/ExcelDownloadProperty.jsx')
   )
 };
 
@@ -177,7 +186,7 @@ const adminJs = new AdminJS({
             after: after_createNewProperty,
           },
           edit: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "surveyor"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "surveyor" || currentAdmin.role == "nagar-officials"),
             before: before_editNewProperty,
             after: after_editNewProperty,
           },
@@ -379,7 +388,7 @@ const adminJs = new AdminJS({
                   fs.writeFileSync(filePath, buffer);
 
                   const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
-                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "karhal");
+                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "bewar");
 
                   await fsPromises.unlink(filePath).catch(err => console.error(err));
 
@@ -417,7 +426,7 @@ const adminJs = new AdminJS({
             icon: 'Printer',
             label: 'Download All Bills',
             isAccessible: ({ currentAdmin }) => {
-              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin'));
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin' || currentAdmin.role == "nagar-officials"));
             },
             component: AdminCustomComponents.BulkBillDownload,
             handler: generateAndDownloadBulkBill
@@ -473,6 +482,23 @@ const adminJs = new AdminJS({
                 };
               }
             },
+          },
+
+            downloadExcel : {
+            actionType : 'resource',
+            icon : 'Download',
+            label : 'Download Excel',
+             isAccessible: ({ currentAdmin }) => {
+              return (currentAdmin && (currentAdmin.role === 'admin' || currentAdmin.role === 'super-admin' || currentAdmin.role == "nagar-officials" || currentAdmin.role == "surveyor"));
+            },
+            component : AdminCustomComponents.ExcelDownloadProperty,
+            handler : async(request , response , context)=>{
+               return {
+                    notice: {
+                      type: 'success',
+                    },
+                };
+            }
           }
 
 
@@ -811,6 +837,44 @@ const adminJs = new AdminJS({
             // }
             handler: bulkUploadNagarNigamData
 
+          },
+          fetchHouseNumberBasedOnWard: {
+            actionType: "resource",     // it will appear under API, not UI
+            isVisible: false,           // hides from AdminJS UI
+            handler: async (req, res, context) => {
+              try {
+                const { ward, houseNumber } = req.query;
+
+                if (!ward || !houseNumber) {
+                  return {
+                    notice: { message: "Missing wardNumber or houseNumber", type: "error" }
+                  };
+                }
+
+                const nagarNigamProperty = await NagarNigamProperty.findOne({
+                  houseNumber , ward
+                }).lean()
+
+
+                if (!nagarNigamProperty) {
+                  return {
+                    found: false,
+                    data: null,
+                  };
+                }
+
+                return {
+                  found: true,
+                  data: nagarNigamProperty,
+                };
+
+              } catch (error) {
+                console.error(error);
+                return {
+                  notice: { message: error.message, type: "error" }
+                };
+              }
+            }
           }
         }
       }
@@ -898,19 +962,19 @@ const adminJs = new AdminJS({
         navigation: { name: "Officials", icon: "Shield" },
         actions: {
           new: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin.role == "nagar-officials"),
             before: before_newPaymentHook,
             after: after_newPaymentHook
           },
           edit: { isAccessible: false },
           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
           delete: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
         },
         properties: {
@@ -945,13 +1009,13 @@ const adminJs = new AdminJS({
             isAccessible: false
           },
           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
           delete: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
           getTaxDetails: {
             actionType: 'record',
@@ -1094,7 +1158,7 @@ const adminJs = new AdminJS({
         navigation: { name: "Officials", icon: "Shield" },
         actions: {
           new: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin" || currentAdmin.role == "nagar-officials"),
             after: after_newARVModificationHook
           },
           edit: {
@@ -1102,13 +1166,13 @@ const adminJs = new AdminJS({
             isAccessible: false
           },
           list: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
           delete: {
             isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
           },
           show: {
-            isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin"),
+            isAccessible: ({ currentAdmin }) => (currentAdmin.role == "admin" || currentAdmin.role == "super-admin" || currentAdmin.role == "nagar-officials"),
           },
         },
         properties: {
@@ -1184,6 +1248,158 @@ const adminJs = new AdminJS({
           show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin") },
         },
       }
+    },
+     {
+      resource: Mutation,
+      options: {
+        navigation: "Admin Only",
+        actions: {
+          new: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "nagar-officials") },
+          edit: { isAccessible: false },
+          list: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "nagar-officials") },
+          delete: { isAccessible: false },
+          show: { isAccessible: ({ currentAdmin }) => (currentAdmin?.role == "admin" || currentAdmin?.role == "super-admin" || currentAdmin?.role == "nagar-officials") },
+
+          // Add custom action for the mutation form
+          // mutationForm: {
+          //   actionType: 'resource',
+          //   component: AdminCustomComponents.MutationComp,
+          //   isVisible: true,
+          //   icon: 'Edit',
+          //   label: 'Property Mutation Form',
+          //   handler: async (request, response, context) => {
+          //     return { record: {} }
+          //   },
+          // },
+
+          // custom actions to fetch property details by PTIN
+          getPropertyDetailsByPTIN: {
+            actionType: 'resource',
+            component: false,
+            handler: async (request, response, context) => {
+
+              console.log("======================= INSIDE THE HANDLE FUNCTION ==============================")
+              const { ptin } = request.query;
+              console.log("PTIN is : " , ptin)
+
+              try {
+                const property = await Property.findOne({ PTIN: ptin }).lean();
+
+                if (!property) {
+                  return {
+                    record: {},
+                    notice: {
+                      message: 'Property not found',
+                      type: 'error'
+                    }
+                  };
+                }
+
+                return {
+                  record: {
+                    property: { ...property }
+                  }
+                };
+              } catch (error) {
+                console.error('Error fetching property:', error);
+                return {
+                  record: {},
+                  notice: {
+                    message: 'Failed to fetch property details',
+                    type: 'error'
+                  }
+                };
+              }
+            }
+          },
+
+          // here saved the mutated values
+          saveMutatedValues: {
+            actionType: 'resource',
+            component: false,
+            handler: async (request, response, context) => {
+              const {currentAdmin} = context
+              const { ptin, ...modifiedValues } = request.query;
+
+              // console.log("request query is : " , request.query)
+
+              // console.log("modified values : " , modifiedValues)
+
+              const structuredMutatedValues = parseMutatedFieldsSafe(modifiedValues)
+
+              try {
+                // Find the property first
+                const property = await Property.findOne({ PTIN: ptin });
+
+                if (!property) {
+                  return {
+                    record: {},
+                    notice: {
+                      message: 'Property not found',
+                      type: 'error'
+                    }
+                  };
+                }
+
+                // now we have to update the property..
+                structuredMutatedValues.forEach(val=>{
+                  property[val?.fieldName] = val?.newValue
+                })
+
+                await property.save()
+                
+
+                // // Create new mutation record
+                // const mutation = new Mutation({
+                //   propertyId: property._id,
+                //   modifiedFields: structuredMutatedValues,
+                //   doneBy: currentAdmin._id,
+                //   remarks: 'Property correction request'
+                // });
+
+                // await mutation.save();
+
+                return {
+                  record: {},
+                  notice: {
+                    message: 'Mutation saved successfully',
+                    type: 'success'
+                  }
+                };
+              } catch (error) {
+                console.error('Error saving mutation:', error);
+                return {
+                  record: {},
+                  notice: {
+                    message: 'Failed to save mutation: ' + error.message,
+                    type: 'error'
+                  }
+                };
+              }
+            }
+          }
+        },
+        properties: {
+          virtualField : {
+             type: 'mixed',
+            isVisible: {
+              list: false,
+              edit: true,
+              show: true,
+              filter: false
+            },
+            components: {
+              edit: AdminCustomComponents.MutationComp,
+              show: AdminCustomComponents.MutationComp
+            }
+          },
+          modifiedFields : {isVisible : false},
+          PTIN : {isVisible : false},
+          propertyId: { isVisible: false },
+          createdAt: { isVisible: false },
+          updatedAt: { isVisible: false }
+        }
+      }
     }
   ],
   assets: {
@@ -1221,19 +1437,19 @@ const adminJs = new AdminJS({
   },
   componentLoader,
   dashboard: null,
-    pages : {
-    dashboard : {
-      label : "Dashboard",
-      component : AdminCustomComponents.AdminDashboardCustomComp,
+  pages: {
+    dashboard: {
+      label: "Dashboard",
+      component: AdminCustomComponents.AdminDashboardCustomComp,
       isVisible: ({ currentAdmin }) => {
-      return currentAdmin && 
-        (currentAdmin.role === "admin" || currentAdmin.role === "super-admin");
-    }
+        return currentAdmin &&
+          (currentAdmin.role === "admin" || currentAdmin.role === "super-admin");
+      }
     }
   },
-  rootPath: "/karhal/admin",
-  loginPath: "/karhal/admin/login",     // 👈 important
-  logoutPath: "/karhal/admin/logout",   // 👈 important
+  rootPath: "/bewar/admin",
+  loginPath: "/bewar/admin/login",     // 👈 important
+  logoutPath: "/bewar/admin/logout",   // 👈 important
 })
 
 adminJs.watch();
@@ -1282,8 +1498,9 @@ export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
   adminJs,
   {
     authenticate: authenticate,
-    cookieName: "karhal-adminjs",
-    cookiePassword: "karhal-12345",
+    // authenticate: dummyAuthenticate,
+    cookieName: "bewar-adminjs",
+    cookiePassword: "bewar-12345",
   },
   null,
   {

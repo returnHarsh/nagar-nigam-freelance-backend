@@ -7,20 +7,20 @@ const dummyAuthenticate = async (email, password) => {
   return null;
 };
 
-const PORT = 5000;
+const PORT = 8000;
 
 const startAdmin = async () => {
   const app = express();
 
-  app.get("/karhal" , (req,res)=>{
-	return res.send("Karhal")
+  app.get("/bewar" , (req,res)=>{
+	return res.send("karhal")
   })
 
   // 👇 Step 1: Set rootPath with full base route
   const admin = new AdminJS({
-    rootPath: "/karhal/new/admin",
-    loginPath: "/karhal/new/admin/login",     // 👈 important
-    logoutPath: "/karhal/new/admin/logout",   // 👈 important
+    rootPath: "/bewar/new/admin",
+    loginPath: "/bewar/new/admin/login",     // 👈 important
+    logoutPath: "/bewar/new/admin/logout",   // 👈 important
   });
 
   // 👇 Step 2: Auth router
@@ -28,8 +28,8 @@ const startAdmin = async () => {
     admin,
     {
       authenticate: dummyAuthenticate,
-      cookieName: "karhal-adminjs",
-      cookiePassword: "karhal-12345",
+      cookieName: "bewar-adminjs",
+      cookiePassword: "bewar-12345",
     },
     null,
     {
@@ -39,7 +39,11 @@ const startAdmin = async () => {
   );
 
   // 👇 Step 3: Mount directly (no extra nesting)
-  app.use("/karhal/new/admin", adminRouter);
+
+  app.use(express.json())
+  // app.use(express.urlencoded({extended : true}))
+
+  app.use("/bewar/new/admin", adminRouter);
 
   app.listen(PORT, () => {
     console.log(

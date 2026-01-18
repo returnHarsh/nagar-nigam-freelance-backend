@@ -3,6 +3,7 @@ import { NagarNigamProperty } from "../../models/nagarNigamProperty.js";
 
 export const bulkUploadNagarNigamData = async (request, response, context) => {
   try {
+    console.log("Uploading the Nagar Nigam Bakaya")
     const { file, fileName } = request.payload;
 
     if (!file) {

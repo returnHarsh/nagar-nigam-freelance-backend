@@ -26,7 +26,7 @@ const FindPropertyIdCustDocument = (props) => {
       // });
 
        const res = (await axios({
-        url : "https://api.npup.in/bewar/admin-internals/get-property-id",
+        url : "https://api.npup.in/ghiror/admin-internals/get-property-id",
         method : "post",
         data : {PTIN : ptin}
       })).data

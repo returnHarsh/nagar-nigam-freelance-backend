@@ -71,7 +71,7 @@ const BulkBillDownload = () => {
       setMessage(null);
 
       const res = await fetch(
-        `https://api.npup.in/bewar/admin-internals/properties-download/${wardNumber}`,
+        `https://api.npup.in/ghiror/admin-internals/properties-download/${wardNumber}`,
         {
           method: "GET",
           credentials: "include", // 🔥 important if auth/cookies involved

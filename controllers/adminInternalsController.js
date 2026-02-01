@@ -1,5 +1,7 @@
 import XLSX from "xlsx"
 import { Property } from "../models/property.js"
+import { uploadToS3 } from "../config/S3.js"
+import { randomUUID } from "crypto";
 
 export const downloadProperyExcel = async (req, res) => {
   try {
@@ -60,3 +62,39 @@ export const downloadProperyExcel = async (req, res) => {
     })
   }
 }
+
+export const uploadFileToS3 = async (req, res) => {
+  try {
+    const { fileName, fileType, fileData, field } = req.body;
+    console.log("inside the s3 handler function");
+
+    if (!fileData) {
+      return res.status(400).json({
+        success: false,
+        message: "No file data provided"
+      });
+    }
+
+    // Decode the base64 file
+    const buffer = Buffer.from(fileData.split(",")[1], "base64");
+    const key = `property/uploads/${field}/${Date.now()}-${randomUUID()}-${fileName}`;
+    console.log("key is:", key);
+
+    await uploadToS3(process.env.AWS_BUCKET, key, buffer, fileType);
+
+    const fileUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    return res.status(200).json({
+      success: true,
+      message: "✅ File uploaded successfully",
+      data: { fileUrl }
+    });
+  } catch (err) {
+    console.error("[ERROR] Upload Action:", err);
+    return res.status(500).json({
+      success: false,
+      message: `Upload failed: ${err.message}`
+    });
+  }
+};
+

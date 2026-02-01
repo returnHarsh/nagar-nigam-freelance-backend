@@ -24,8 +24,8 @@ const app = express();
 // ========== Serving static files like css file ====================
 app.use(express.static("public"));
 
-// ============== Main Bewar Router ======================
-const BewarRouter = express.Router();
+// ============== Main Ghiror Router ======================
+const Ghiror = express.Router();
 
 // configuring the cors middleware , allowing my registered frontend to talk to this backend
 app.use(cors({
@@ -40,7 +40,7 @@ app.use(sessionMiddleware(process.env.MONGO_URI));
 // app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // ================= Main AdminJs Route ===================
-BewarRouter.use("/admin" , adminRouter)
+Ghiror.use("/admin" , adminRouter)
 
 // =============== Body parser middleware ================
 app.use(express.json({ limit: '50mb' }));
@@ -48,24 +48,24 @@ app.use(express.json({ limit: '50mb' }));
 
 
 // ============ Route to handle adminjs internal functions ================
-BewarRouter.use("/admin-internals" , interalAdminRoutes)
+Ghiror.use("/admin-internals" , interalAdminRoutes)
 
 
 // ============ Health check and default route ===============
-BewarRouter.get("/" , (req,res)=>{
+Ghiror.get("/" , (req,res)=>{
 	console.log("Host Header : " , req.headers.host)
 	console.log('Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
 	return res.send(`<h2> Server Healthy 🙂 ${new Date()} </h2>`)
 })
 
-BewarRouter.use("/admin-info" , adminDashboardRoutes)
-// BewarRouter.use("/public" ,publicRouter)
-// BewarRouter.use("/users-data" , usersData)
+Ghiror.use("/admin-info" , adminDashboardRoutes)
+// Ghiror.use("/public" ,publicRouter)
+// Ghiror.use("/users-data" , usersData)
 
 
 
-// ============== Now all the request goes through /bewar =============
-app.use("/bewar" , BewarRouter)
+// ============== Now all the request goes through /ghiror =============
+app.use("/ghiror" , Ghiror)
 
 
 // ============== Global Error middleware , must be placed in last ==============

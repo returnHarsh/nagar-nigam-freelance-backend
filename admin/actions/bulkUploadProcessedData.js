@@ -13,6 +13,7 @@ import { flagPropertyForReceiptGen } from "../../utils/flagProperty.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const processEachProperty = async(property)=>{
+  let isProcessed = true
 	try{
     console.log("running for property with Id : " , property)
 		const {floorsData , roadWidthType , constructionType , propertyType} = property;
@@ -36,13 +37,14 @@ const processEachProperty = async(property)=>{
 			await generateReciept(property , latestTax)
       console.log("reciept generated")
 		}catch(err){
+      isProcessed = false;
       flagPropertyForReceiptGen(property)
 			// errorLogger(err , "");
 		}
 
 		// ======= Step 4 : Categorizing and attaching the proprtyGroup =======
 		property.propertyGroup = mapClassifiedProperty(property.propertyType)
-		await Property.findByIdAndUpdate(property._id, { propertyGroup: property.propertyGroup , isProcessed : true});
+		await Property.findByIdAndUpdate(property._id, { propertyGroup: property.propertyGroup , isProcessed});
 
     console.log("🎉 🎉 Done processing the property")
 
@@ -104,7 +106,7 @@ export function runPythonScript(scriptPath, excelFilePath) {
 
 	const venvPythonPath = path.resolve("scripts/.venv/bin/python")
     // const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'barnal']);
-    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'bewar']);
+    const python = spawn( venvPythonPath , [scriptPath,  excelFilePath , process.env.MONGO_URI , 'ghiror']);
     
     let stdout = '';
     let stderr = '';

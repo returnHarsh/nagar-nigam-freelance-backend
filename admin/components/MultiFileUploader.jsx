@@ -31,21 +31,33 @@ const MultiFileUploader = ({ onChange }) => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Data = reader.result;
-        const response = await api.resourceAction({
-          resourceId: "Property",
-          actionName: "uploadToS3",
-          method: "post",
-          data: {
-            fileName: file.name,
-            fileType: file.type,
-            fileData: base64Data,
-            field: fieldKey,
+        // const response = await api.resourceAction({
+        //   resourceId: "Property",
+        //   actionName: "uploadToS3",
+        //   method: "post",
+        //   data: {
+        //     fileName: file.name,
+        //     fileType: file.type,
+        //     fileData: base64Data,
+        //     field: fieldKey,
+        //   },
+        // });
+
+        let response = await fetch(`https://api.npup.in/ghiror/admin-internals/upload`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({ fileName : file.name, fileType : file.type, fileData : base64Data , field : fieldKey }),
         });
+
+        response = await response.json()
+
+        console.log("response is : " , response)
 
         if (!response.data) throw new Error("No response from server");
 
-        const fileUrl = response.data?.data?.fileUrl;
+        const fileUrl = response.data?.data?.fileUrl || response?.data?.fileUrl;
         if (fileUrl) {
           onChange(fieldKey, fileUrl);
           setUploadedUrls((prev) => ({ ...prev, [fieldKey]: fileUrl }));

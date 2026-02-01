@@ -3,7 +3,7 @@ import session from 'express-session';
 
 export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
   return session({
-    name: 'bewar-adminjs',
+    name: 'ghiror-adminjs',
     secret: process.env.SECRET_KEY,
     resave: false,
     saveUninitialized: false,
@@ -16,7 +16,7 @@ export const sessionMiddleware = (MONGO_CONNECTION_URI) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',     // ✅ helps retain cookies across redirects
-      path: '/bewar',     // ✅ matches your mount path
+      path: '/ghiror',     // ✅ matches your mount path
     },
   });
 };

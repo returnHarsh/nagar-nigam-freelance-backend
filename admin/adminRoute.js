@@ -1447,9 +1447,9 @@ const adminJs = new AdminJS({
       }
     }
   },
-  rootPath: "/bewar/admin",
-  loginPath: "/bewar/admin/login",     // 👈 important
-  logoutPath: "/bewar/admin/logout",   // 👈 important
+  rootPath: "/ghiror/admin",
+  loginPath: "/ghiror/admin/login",     // 👈 important
+  logoutPath: "/ghiror/admin/logout",   // 👈 important
 })
 
 adminJs.watch();
@@ -1461,11 +1461,10 @@ const ADMIN_DUMMY = {
 }
 
 const dummyAuthenticate = async (email, password) => {
-  // if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
+  if(email == ADMIN_DUMMY.email && password == ADMIN_DUMMY.password) return ADMIN_DUMMY
   console.log("inside the dummy authenticate function")
   return ADMIN_DUMMY;
   return null;
-
 }
 
 const authenticate = async (email, password) => {
@@ -1499,8 +1498,8 @@ export const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
   {
     authenticate: authenticate,
     // authenticate: dummyAuthenticate,
-    cookieName: "bewar-adminjs",
-    cookiePassword: "bewar-12345",
+    cookieName: "ghiror-adminjs",
+    cookiePassword: "ghiror-12345",
   },
   null,
   {

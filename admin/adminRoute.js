@@ -388,7 +388,7 @@ const adminJs = new AdminJS({
                   fs.writeFileSync(filePath, buffer);
 
                   const scriptPath = path.join(__dirname, '../scripts/process_and_save_bulk_properties.py');
-                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "bewar");
+                  const result = await runPythonScript(scriptPath, filePath, process.env.MONGO_URI, "ghiror");
 
                   await fsPromises.unlink(filePath).catch(err => console.error(err));
 

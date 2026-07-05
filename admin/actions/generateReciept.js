@@ -1754,12 +1754,12 @@ export const generateTaxBillPDF = async (property, tax) => {
     <!-- First Receipt -->
     <div class="container">
       <div class="header">
-        <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/up-logo.jpg" class="header-logo" alt="UP Logo" />
+        <img src="https://nagar-nigam-new-v2.s3.ap-south-1.amazonaws.com/public-images/up-logo.jpg" class="header-logo" alt="UP Logo" />
         <div class="header-center">
           <div class="header-title">नगर पंचायत ${nagarNigamName} , मैनपुरी</div>
           <div class="header-subtitle">बिल गृहकर एवं जलकर</div>
         </div>
-        <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/swadesh-logo.jpg" class="swachh-logo" alt="Swachh Bharat" />
+        <img src="https://nagar-nigam-new-v2.s3.ap-south-1.amazonaws.com/public-images/swadesh-logo.jpg" class="swachh-logo" alt="Swachh Bharat" />
       </div>
       <div class="content">
         <div class="info-section">
@@ -1885,12 +1885,12 @@ export const generateTaxBillPDF = async (property, tax) => {
     <!-- Second Receipt (Duplicate) -->
     <div class="container">
       <div class="header">
-        <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/up-logo.jpg" class="header-logo" alt="UP Logo" />
+        <img src="https://nagar-nigam-new-v2.s3.ap-south-1.amazonaws.com/public-images/up-logo.jpg" class="header-logo" alt="UP Logo" />
         <div class="header-center">
           <div class="header-title">नगर पंचायत ${nagarNigamName} , मैनपुरी</div>
           <div class="header-subtitle">बिल गृहकर एवं जलकर</div>
         </div>
-        <img src="https://nagar-nigam.s3.ap-south-1.amazonaws.com/public-images/swadesh-logo.jpg" class="swachh-logo" alt="Swachh Bharat" />
+        <img src="https://nagar-nigam-new-v2.s3.ap-south-1.amazonaws.com/public-images/swadesh-logo.jpg" class="swachh-logo" alt="Swachh Bharat" />
       </div>
       <div class="content">
         <div class="info-section">

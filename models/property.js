@@ -142,7 +142,9 @@ const propertySchema = new mongoose.Schema({
   isSuccessSubmit : {type : Boolean , default : true},
 
   // for bulk property upload
-  isProcessed : {type : Boolean , default : false}
+  isProcessed : {type : Boolean , default : false},
+
+  ledger: { type: String }
 
   
 

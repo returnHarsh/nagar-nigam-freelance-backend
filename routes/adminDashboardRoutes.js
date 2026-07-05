@@ -16,7 +16,7 @@ export const router = express.Router();
 router.post("/get-recent-activities" , getLatestSurveyActivities)
 router.post("/surveyor-info" , getSurveyorDataForRecord)
 router.post("/login" , login)
-router.get("/stats" , getDashboardStats)
+router.post("/stats" , getDashboardStats)
 router.post("/user-view" , getUserData)
 router.post("/graph-stats" , chartStatsData)
 router.post("/graph-stats-detail" , chartStatsDataInDepth)

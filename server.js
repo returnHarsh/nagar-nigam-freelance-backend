@@ -1,6 +1,7 @@
 import express from "express"
 import dotenv from "dotenv"
 import cors from "cors"
+import cookieParser from "cookie-parser"
 import { connectDB } from "./config/db.js";
 dotenv.config();
 
@@ -10,6 +11,7 @@ import { errorLogger, errorMiddleware } from "./utils/errorLogger.js";
 import {adminRouter} from "./admin/adminRoute.js"
 import {sessionMiddleware} from "./middlewares/sessionMiddleware.js"
 import {router as interalAdminRoutes} from "./routes/adminInternalRoutes.js"
+import {router as NewAdminRoutes} from "./routes/NewAdminRoutes.js"
 // import { gateKeeper } from "./middlewares/gateKeeper.js";
 
 
@@ -29,10 +31,12 @@ const Ghiror = express.Router();
 
 // configuring the cors middleware , allowing my registered frontend to talk to this backend
 app.use(cors({
-	origin : process.env.FRONTEND_URL,
+	// origin : process.env.FRONTEND_URL,
+	origin : "http://localhost:3000",
 	credentials : true
 }))
 
+app.use(cookieParser())
 app.use(sessionMiddleware(process.env.MONGO_URI));
 
 // =============== Body parser middleware ================
@@ -49,6 +53,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // ============ Route to handle adminjs internal functions ================
 Ghiror.use("/admin-internals" , interalAdminRoutes)
+Ghiror.use("/admin-api" ,NewAdminRoutes )
 
 
 // ============ Health check and default route ===============

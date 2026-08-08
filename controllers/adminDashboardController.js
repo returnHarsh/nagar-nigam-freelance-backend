@@ -528,17 +528,17 @@ const countPropertiesUsingAggregation = async () => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const {wardNumber} = req.query
-    console.log("================== ward Number : " , wardNumber , " ===============")
+    const { wardNumber } = req.query
+    console.log("================== ward Number : ", wardNumber, " ===============")
     const propertyQuery = {}
 
-    if(wardNumber){
+    if (wardNumber) {
       propertyQuery.wardNumber = wardNumber?.toString()?.trim()
     }
 
     const properties = await Property.find(propertyQuery).lean();
 
-    const propertyIds = properties.map(p=> p?._id)
+    const propertyIds = properties.map(p => p?._id)
 
     const propertyDistribution = {
       residential: [],
@@ -634,8 +634,8 @@ export const getDashboardStats = async (req, res) => {
     // here we are calculating the tax stats
     const taxes = await Tax.aggregate([
       {
-        $match : {
-          propertyId : {$in : propertyIds}
+        $match: {
+          propertyId: { $in: propertyIds }
         }
       },
       {
@@ -655,30 +655,30 @@ export const getDashboardStats = async (req, res) => {
     ]);
 
     const taxInfo = {
-      interestRate : 0,
-      totalTax : 0,
-      dueTaxAmount : 0,
-      totalARV : 0,
-      totalAmountPaid : 0,
-      totalBakaya : 0,
-      totalTaxWithoutBakaya : 0,
-      totalInterestAmountOnBakaya : 0,
-      taxStatus : {
-        pending : 0,
-        partial : 0,
-        paid : 0
+      interestRate: 0,
+      totalTax: 0,
+      dueTaxAmount: 0,
+      totalARV: 0,
+      totalAmountPaid: 0,
+      totalBakaya: 0,
+      totalTaxWithoutBakaya: 0,
+      totalInterestAmountOnBakaya: 0,
+      taxStatus: {
+        pending: 0,
+        partial: 0,
+        paid: 0
       }
     }
 
     taxInfo.interestRate = taxes[0]?.interestRate
 
-    taxes.forEach(tax=>{
+    taxes.forEach(tax => {
       taxInfo.totalTax += tax.totalTax,
-      taxInfo.dueTaxAmount += tax.dueAmount,
-      taxInfo.totalARV += tax.arv,
-      taxInfo.totalAmountPaid += tax.paidAmount,
-      taxInfo.totalInterestAmountOnBakaya += tax.interestAmountOnBakaya,
-      taxInfo.totalTaxWithoutBakaya += tax.taxWithoutBakaya
+        taxInfo.dueTaxAmount += tax.dueAmount,
+        taxInfo.totalARV += tax.arv,
+        taxInfo.totalAmountPaid += tax.paidAmount,
+        taxInfo.totalInterestAmountOnBakaya += tax.interestAmountOnBakaya,
+        taxInfo.totalTaxWithoutBakaya += tax.taxWithoutBakaya
       taxInfo.taxStatus[tax.taxStatus?.toLowerCase()] += 1
       taxInfo.totalBakaya += tax.bakaya
     })
@@ -703,14 +703,14 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-export const getTotalWardDetails = async(req,res)=>{
-  try{
+export const getTotalWardDetails = async (req, res) => {
+  try {
 
     const wardDetails = await PropertyWardDetail.find({}).lean();
-    return res.status(200).json({message : "found all wards" , data : wardDetails})
+    return res.status(200).json({ message: "found all wards", data: wardDetails })
 
-  }catch(err){
-    console.log("[ERROR] in getTotalWardDetails : " , err.message)
+  } catch (err) {
+    console.log("[ERROR] in getTotalWardDetails : ", err.message)
   }
 }
 
@@ -1237,7 +1237,7 @@ export const login = async (req, res) => {
 
     return res
       .status(201)
-      .json({ success: true, message: "Login Successful!!" });
+      .json({ success: true, message: "Login Successful!!", data: { role: adminUser?.role } });
   } catch (err) {
     console.log("[ERROR] in login function : ", err);
     return res
